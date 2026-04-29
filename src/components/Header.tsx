@@ -27,6 +27,11 @@ export function Header() {
               Contact
             </a>
           </li>
+          <li>
+            <a href="/admin" className="nav-link text-sm">
+              Admin
+            </a>
+          </li>
         </ul>
       </nav>
     </header>
