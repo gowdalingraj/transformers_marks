@@ -16,6 +16,66 @@ button {
   font: inherit;
 }
 
+.mobile-menu-button {
+  display: inline-grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-content: center;
+  gap: 0.32rem;
+  border: 1px solid hsl(var(--primary) / 0.4);
+  border-radius: 0.75rem;
+  background: hsl(var(--secondary) / 0.86);
+  color: hsl(var(--primary));
+}
+
+.mobile-menu-button span {
+  display: block;
+  width: 1.15rem;
+  height: 2px;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+.mobile-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 1.5rem;
+  right: 1.5rem;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid hsl(var(--primary) / 0.24);
+  border-radius: 0.75rem;
+  background: hsl(var(--secondary) / 0.96);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.4rem);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.mobile-menu-panel.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.mobile-menu-panel a {
+  border-radius: 0.5rem;
+  color: hsl(var(--foreground));
+  padding: 0.85rem 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.mobile-menu-panel a:hover {
+  background: hsl(var(--primary) / 0.14);
+  color: hsl(var(--primary));
+}
+
 .back-button {
   display: inline-flex;
   align-items: center;
