@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Property } from "../types/property";
 import { BackButton } from "./BackButton";
-import { MapPinIcon, RupeeIcon } from "./icons";
+import { CheckIcon, MapPinIcon, RupeeIcon, SparkIcon } from "./icons";
 
 type PropertyDetailProps = {
   property: Property;
@@ -12,6 +12,42 @@ type PropertyDetailProps = {
 export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailProps) {
   const [activeImage, setActiveImage] = useState(0);
   const images = property.gallery.length > 0 ? property.gallery : [property.image];
+
+  function downloadBrochure() {
+    const brochure = [
+      property.name,
+      "",
+      `Type: ${property.type}`,
+      `Location: ${property.location}`,
+      `Price: ${property.price}`,
+      "",
+      property.aboutTitle,
+      property.aboutText,
+      "",
+      "Project Highlights",
+      ...property.facts.map((fact) => `- ${fact}`),
+      "",
+      "Amenities",
+      ...property.amenities.map((amenity) => `- ${amenity}`),
+      "",
+      property.masterPlanTitle,
+      property.masterPlan,
+      "",
+      property.floorPlanTitle,
+      property.floorPlan,
+      "",
+      "Available Units",
+      ...property.units.map((unit) => `- ${unit.unit} | ${unit.text}`)
+    ].join("\n");
+    const file = new Blob([brochure], { type: "text/plain" });
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `${property.slug}-brochure.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   function showPreviousImage() {
     setActiveImage((current) => (current === 0 ? images.length - 1 : current - 1));
@@ -112,27 +148,52 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
             <p className="property-copy">
               {property.aboutText}
             </p>
-            <button className="property-outline-button" type="button" onClick={onEnquire}>
-              Contact Us
+            <button className="property-outline-button" type="button" onClick={downloadBrochure}>
+              Download Brochure
             </button>
           </div>
         </section>
 
-        <section className="property-facts">
-          {property.facts.map((fact) => (
-            <article className="property-fact" key={fact}>
-              <h3>{fact}</h3>
-            </article>
-          ))}
+        <section className="property-section property-highlights-section">
+          <div className="property-section-heading">
+            <div>
+              <p className="property-kicker">Highlights</p>
+              <h2 className="property-section-title">Project Essentials</h2>
+            </div>
+            <p>
+              Key approvals, planning details and community-scale markers at a glance.
+            </p>
+          </div>
+          <div className="property-facts">
+            {property.facts.map((fact, index) => (
+              <article className="property-fact" key={fact}>
+                <span className="property-fact-number">{String(index + 1).padStart(2, "0")}</span>
+                <h3>{fact}</h3>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section className="property-section">
-          <p className="property-kicker">Amenities</p>
-          <h2 className="property-section-title">Designed For Everyday Living</h2>
+          <div className="property-section-heading">
+            <div>
+              <p className="property-kicker">Amenities</p>
+              <h2 className="property-section-title">Designed For Everyday Living</h2>
+            </div>
+            <p>
+              A balanced mix of wellness, recreation, work and social spaces for residents.
+            </p>
+          </div>
           <div className="property-amenities">
             {property.amenities.map((amenity) => (
               <article className="property-amenity" key={amenity}>
-                <span />
+                <span className="property-amenity-icon">
+                  {amenity.toLowerCase().includes("approved") ? (
+                    <CheckIcon className="h-5 w-5" />
+                  ) : (
+                    <SparkIcon className="h-5 w-5" />
+                  )}
+                </span>
                 <h3>{amenity}</h3>
               </article>
             ))}
@@ -142,15 +203,16 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
         <section className="property-section property-plan-grid">
           <div>
             <p className="property-kicker">Master Plan</p>
-            <h2 className="property-section-title">Ground + Terrace Level Amenities</h2>
+            <h2 className="property-section-title">{property.masterPlanTitle}</h2>
             <div className="property-plan-card">
-              <h3>Ground Floor</h3>
+              <img src={property.masterPlanImage} alt={property.masterPlanTitle} />
               <p>{property.masterPlan}</p>
             </div>
           </div>
           <div className="property-plan-card property-plan-card-offset">
-            <h3>Terrace</h3>
-            <p>{property.terracePlan}</p>
+            <img src={property.floorPlanImage} alt={property.floorPlanTitle} />
+            <h3>{property.floorPlanTitle}</h3>
+            <p>{property.floorPlan}</p>
           </div>
         </section>
 
@@ -160,17 +222,11 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
           <div className="property-units">
             {property.units.map((unit) => (
               <article className="property-unit" key={unit.unit}>
+                <img src={unit.image} alt={unit.unit} />
                 <div>
                   <h3>{unit.unit}</h3>
-                  <p>{unit.size}</p>
+                  <p>{unit.text}</p>
                 </div>
-                <div>
-                  <span>{unit.bhk}</span>
-                  <span>{unit.facing}</span>
-                </div>
-                <button type="button" onClick={onEnquire}>
-                  Enquire
-                </button>
               </article>
             ))}
           </div>

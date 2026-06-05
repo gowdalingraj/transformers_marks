@@ -21,14 +21,17 @@ export type Property = {
   aboutText: string;
   facts: string[];
   amenities: string[];
+  masterPlanTitle: string;
+  masterPlanImage: string;
   masterPlan: string;
-  terracePlan: string;
+  floorPlanTitle: string;
+  floorPlanImage: string;
+  floorPlan: string;
   units: PropertyUnit[];
 };
 
 export type PropertyUnit = {
   unit: string;
-  size: string;
-  bhk: string;
-  facing: string;
+  text: string;
+  image: string;
 };

@@ -38,3 +38,19 @@ export function RupeeIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function CheckIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25">
+      <path d="m5 12 4 4L19 6" />
+    </svg>
+  );
+}
+
+export function SparkIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 2v5M12 17v5M4.93 4.93l3.54 3.54M15.53 15.53l3.54 3.54M2 12h5M17 12h5M4.93 19.07l3.54-3.54M15.53 8.47l3.54-3.54" />
+    </svg>
+  );
+}

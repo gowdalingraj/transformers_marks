@@ -24,7 +24,7 @@ export function ActiveFilters({
   }
 
   return (
-    <div className="flex flex-wrap justify-center gap-2 mb-6">
+    <div className="flex flex-wrap justify-center gap-2 mb-8">
       {selectedType && (
         <FilterChip className="capitalize" label={selectedType} onClick={onClearType} />
       )}
@@ -53,7 +53,7 @@ function FilterChip({
     >
       {label}
       <span className="text-xs opacity-60" aria-hidden="true">
-        ✕
+        x
       </span>
     </button>
   );

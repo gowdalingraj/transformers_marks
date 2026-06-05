@@ -37,8 +37,12 @@ function rowToProperty(row) {
     aboutText: row.about_text,
     facts: row.facts,
     amenities: row.amenities,
+    masterPlanTitle: row.master_plan_title ?? "Master Plan",
+    masterPlanImage: row.master_plan_image ?? row.image,
     masterPlan: row.master_plan,
-    terracePlan: row.terrace_plan,
+    floorPlanTitle: row.floor_plan_title ?? "Floor Plans",
+    floorPlanImage: row.floor_plan_image ?? row.image,
+    floorPlan: row.floor_plan || row.terrace_plan,
     units: row.units
   };
 }
@@ -54,12 +58,13 @@ async function replaceProperties(properties) {
       await client.query(
         `INSERT INTO properties (
           slug, name, type, location, location_id, price, budget, image,
-          gallery, about_title, about_text, facts, amenities, master_plan,
-          terrace_plan, units
+          gallery, about_title, about_text, facts, amenities, master_plan_title,
+          master_plan_image, master_plan, floor_plan_title, floor_plan_image,
+          floor_plan, units
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8,
           $9::jsonb, $10, $11, $12::jsonb, $13::jsonb, $14,
-          $15, $16::jsonb
+          $15, $16, $17, $18, $19, $20::jsonb
         )`,
         [
           property.slug,
@@ -75,8 +80,12 @@ async function replaceProperties(properties) {
           property.aboutText,
           JSON.stringify(property.facts),
           JSON.stringify(property.amenities),
+          property.masterPlanTitle ?? "Master Plan",
+          property.masterPlanImage ?? property.image,
           property.masterPlan,
-          property.terracePlan,
+          property.floorPlanTitle ?? "Floor Plans",
+          property.floorPlanImage ?? property.image,
+          property.floorPlan ?? property.terracePlan ?? "",
           JSON.stringify(property.units)
         ]
       );

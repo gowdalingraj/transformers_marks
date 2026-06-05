@@ -5,13 +5,10 @@ export function Header() {
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4 md:px-12 lg:px-20">
+    <header className="site-header fixed top-0 left-0 right-0 z-50 px-6 py-4 md:px-12 lg:px-20">
       <nav className="flex items-center justify-between max-w-7xl mx-auto">
-        <a className="flex items-center gap-3" href="/" aria-label="Transformers Marks home">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <span className="sr-only">Logo</span>
-          </div>
-          <span className="text-lg font-medium">
+        <a className="site-logo" href="/" aria-label="Transformers Marks home">
+          <span>
             Transformers <span className="text-primary">Marks</span>
           </span>
         </a>

@@ -7,11 +7,17 @@ const galleryImages = [
   "https://images.unsplash.com/photo-1580587771525-78b9dbd3c236?w=1200&h=800&fit=crop"
 ];
 
+const planImages = [
+  "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200&h=800&fit=crop",
+  "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1200&h=800&fit=crop",
+  "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=1200&h=800&fit=crop"
+];
+
 const facts = [
   "BMRDA Approved",
   "Basement + 5 Floors",
   "RERA Approved",
-  "Ground + Terrace Amenities",
+  "Master + Floor Plans",
   "28 Premium Units",
   "75% Open Space"
 ];
@@ -26,12 +32,36 @@ const amenities = [
 ];
 
 const units = [
-  { unit: "406", size: "1044 sq ft", bhk: "3 BHK", facing: "East Facing" },
-  { unit: "405", size: "1042 sq ft", bhk: "3 BHK", facing: "West Facing" },
-  { unit: "403", size: "996 sq ft", bhk: "2 BHK", facing: "East Facing" },
-  { unit: "402", size: "952 sq ft", bhk: "2 BHK", facing: "West Facing" },
-  { unit: "401", size: "838 sq ft", bhk: "2 BHK", facing: "East Facing" },
-  { unit: "306", size: "996 sq ft", bhk: "2 BHK", facing: "West Facing" }
+  {
+    unit: "406 - 3 BHK East Facing",
+    text: "1044 sq ft premium residence with efficient planning and east-facing natural light.",
+    image: planImages[0]
+  },
+  {
+    unit: "405 - 3 BHK West Facing",
+    text: "1042 sq ft home planned for generous living, dining and bedroom spaces.",
+    image: planImages[1]
+  },
+  {
+    unit: "403 - 2 BHK East Facing",
+    text: "996 sq ft two-bedroom layout with practical circulation and balanced room sizes.",
+    image: planImages[2]
+  },
+  {
+    unit: "402 - 2 BHK West Facing",
+    text: "952 sq ft compact residence designed for comfortable daily living.",
+    image: planImages[0]
+  },
+  {
+    unit: "401 - 2 BHK East Facing",
+    text: "838 sq ft east-facing home with optimized spaces for modern apartment living.",
+    image: planImages[1]
+  },
+  {
+    unit: "306 - 2 BHK West Facing",
+    text: "996 sq ft two-bedroom unit with well-separated private and common zones.",
+    image: planImages[2]
+  }
 ];
 
 function slugify(value) {
@@ -79,8 +109,12 @@ export const defaultProperties = baseProperties.map(
     aboutText: `At ${name}, residents will find inspiration in architectural design, landscaped open spaces, planned amenities and thoughtful community areas. Located in ${location}, the project gives convenient access to growing residential, commercial, education and healthcare destinations.`,
     facts,
     amenities,
+    masterPlanTitle: "Master Plan",
+    masterPlanImage: planImages[index % planImages.length],
     masterPlan: "Arrival court, parking, access lobby and landscaped community zones.",
-    terracePlan: "Open-air seating, recreation pockets and leisure areas for residents.",
+    floorPlanTitle: "Floor Plans",
+    floorPlanImage: planImages[(index + 1) % planImages.length],
+    floorPlan: "Typical floor layouts with efficient circulation, natural light and well-planned homes.",
     units
   })
 );

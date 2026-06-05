@@ -6,7 +6,8 @@ import { Header } from "./components/Header";
 import { Hero } from "./components/Hero";
 import { LeadPage } from "./components/LeadPage";
 import { PropertyDetail } from "./components/PropertyDetail";
-import { properties } from "./data/properties";
+import { WhatsAppChatbot } from "./components/WhatsAppChatbot";
+import { normalizeProperties, properties } from "./data/properties";
 import type { BudgetId, LocationId, Property, PropertyType } from "./types/property";
 
 const ADMIN_STORAGE_KEY = "transformers_marks_properties";
@@ -16,7 +17,7 @@ const ADMIN_PASSWORD = "admin123";
 function loadProperties() {
   try {
     const stored = window.localStorage.getItem(ADMIN_STORAGE_KEY);
-    return stored ? (JSON.parse(stored) as Property[]) : properties;
+    return stored ? normalizeProperties(JSON.parse(stored) as Property[]) : properties;
   } catch {
     return properties;
   }
@@ -53,7 +54,7 @@ export default function App() {
           return;
         }
 
-        const apiProperties = (await response.json()) as Property[];
+        const apiProperties = normalizeProperties((await response.json()) as Property[]);
         if (!ignore && apiProperties.length > 0) {
           setPropertyList(apiProperties);
           window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(apiProperties));
@@ -134,7 +135,7 @@ export default function App() {
       if (response.ok) {
         const reloaded = await fetch("/api/properties");
         if (reloaded.ok) {
-          const apiProperties = (await reloaded.json()) as Property[];
+          const apiProperties = normalizeProperties((await reloaded.json()) as Property[]);
           setPropertyList(apiProperties);
           window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(apiProperties));
           return apiProperties;
@@ -254,6 +255,7 @@ export default function App() {
           />
         </>
       )}
+      {!isAdminRoute && <WhatsAppChatbot property={routeProperty ?? leadProperty} />}
       <Footer />
     </div>
   );

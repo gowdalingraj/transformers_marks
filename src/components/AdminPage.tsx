@@ -103,8 +103,8 @@ export function AdminPage({
     const units = value
       .split("\n")
       .map((line) => line.split("|").map((part) => part.trim()))
-      .filter((parts) => parts.length >= 4 && parts[0])
-      .map<PropertyUnit>(([unit, size, bhk, facing]) => ({ unit, size, bhk, facing }));
+      .filter((parts) => parts.length >= 2 && parts[0])
+      .map<PropertyUnit>(([unit, text, image]) => ({ unit, text, image: image || activeProperty?.floorPlanImage || "" }));
 
     updateProperty({ units });
   }
@@ -129,6 +129,17 @@ export function AdminPage({
     updateProperty({ gallery: [...activeProperty.gallery, ...uploadedImages] });
   }
 
+  async function uploadPlanImage(
+    key: "masterPlanImage" | "floorPlanImage",
+    file: File | undefined
+  ) {
+    if (!file) {
+      return;
+    }
+
+    updateProperty({ [key]: await readFileAsDataUrl(file) } as Pick<Property, typeof key>);
+  }
+
   function addProperty() {
     const created: Property = {
       slug: `new-property-${drafts.length + 1}`,
@@ -147,9 +158,21 @@ export function AdminPage({
       aboutText: "Describe the project, location, design, amenities and connectivity here.",
       facts: ["RERA Approved", "Premium Units", "Open Space"],
       amenities: ["Swimming Pool", "Gym", "Party Hall"],
+      masterPlanTitle: "Master Plan",
+      masterPlanImage:
+        "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200&h=800&fit=crop",
       masterPlan: "Describe the master plan here.",
-      terracePlan: "Describe terrace amenities here.",
-      units: [{ unit: "101", size: "1000 sq ft", bhk: "2 BHK", facing: "East Facing" }]
+      floorPlanTitle: "Floor Plans",
+      floorPlanImage:
+        "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1200&h=800&fit=crop",
+      floorPlan: "Describe floor plans here.",
+      units: [
+        {
+          unit: "101 - 2 BHK",
+          text: "1000 sq ft east-facing home with efficient planning.",
+          image: "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=1200&h=800&fit=crop"
+        }
+      ]
     };
 
     setDrafts((current) => [...current, created]);
@@ -407,22 +430,76 @@ export function AdminPage({
                   onChange={(event) => updateLines("amenities", event.target.value)}
                 />
               </AdminField>
+              <AdminField label="Master Plan Title">
+                <input
+                  value={activeProperty.masterPlanTitle}
+                  onChange={(event) => updateProperty({ masterPlanTitle: event.target.value })}
+                />
+              </AdminField>
+              <AdminField label="Master Plan Image URL">
+                <input
+                  value={activeProperty.masterPlanImage}
+                  onChange={(event) => updateProperty({ masterPlanImage: event.target.value })}
+                />
+              </AdminField>
+              <AdminField label="Upload Master Plan Image">
+                <input
+                  accept="image/*"
+                  type="file"
+                  onChange={(event) => {
+                    void uploadPlanImage("masterPlanImage", event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+                <img
+                  className="admin-image-preview"
+                  src={activeProperty.masterPlanImage}
+                  alt={`${activeProperty.name} master plan preview`}
+                />
+              </AdminField>
               <AdminField label="Master Plan Text">
                 <textarea
                   value={activeProperty.masterPlan}
                   onChange={(event) => updateProperty({ masterPlan: event.target.value })}
                 />
               </AdminField>
-              <AdminField label="Terrace Plan Text">
-                <textarea
-                  value={activeProperty.terracePlan}
-                  onChange={(event) => updateProperty({ terracePlan: event.target.value })}
+              <AdminField label="Floor Plan Title">
+                <input
+                  value={activeProperty.floorPlanTitle}
+                  onChange={(event) => updateProperty({ floorPlanTitle: event.target.value })}
                 />
               </AdminField>
-              <AdminField label="Units: unit | size | bhk | facing">
+              <AdminField label="Floor Plan Image URL">
+                <input
+                  value={activeProperty.floorPlanImage}
+                  onChange={(event) => updateProperty({ floorPlanImage: event.target.value })}
+                />
+              </AdminField>
+              <AdminField label="Upload Floor Plan Image">
+                <input
+                  accept="image/*"
+                  type="file"
+                  onChange={(event) => {
+                    void uploadPlanImage("floorPlanImage", event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+                <img
+                  className="admin-image-preview"
+                  src={activeProperty.floorPlanImage}
+                  alt={`${activeProperty.name} floor plan preview`}
+                />
+              </AdminField>
+              <AdminField label="Floor Plan Text">
+                <textarea
+                  value={activeProperty.floorPlan}
+                  onChange={(event) => updateProperty({ floorPlan: event.target.value })}
+                />
+              </AdminField>
+              <AdminField label="Units: title | text | image URL">
                 <textarea
                   value={activeProperty.units
-                    .map((unit) => `${unit.unit} | ${unit.size} | ${unit.bhk} | ${unit.facing}`)
+                    .map((unit) => `${unit.unit} | ${unit.text} | ${unit.image}`)
                     .join("\n")}
                   onChange={(event) => updateUnits(event.target.value)}
                 />
