@@ -13,7 +13,7 @@ export function Header() {
           </span>
         </a>
 
-        <ul className="hidden md:flex items-center gap-8">
+        <ul className="hidden sm:flex items-center gap-6 md:gap-8">
           <li>
             <a href="#about" className="nav-link text-sm">
               About
@@ -37,7 +37,7 @@ export function Header() {
         </ul>
 
         <button
-          className="mobile-menu-button md:hidden"
+          className="mobile-menu-button sm:hidden"
           type="button"
           aria-expanded={isMenuOpen}
           aria-controls="mobile-menu"
@@ -50,23 +50,22 @@ export function Header() {
         </button>
       </nav>
 
-      <div
-        className={`mobile-menu-panel md:hidden ${isMenuOpen ? "open" : ""}`}
-        id="mobile-menu"
-      >
-        <a href="/#about" onClick={closeMenu}>
-          About
-        </a>
-        <a href="/#properties" onClick={closeMenu}>
-          Properties
-        </a>
-        <a href="/#contact" onClick={closeMenu}>
-          Contact
-        </a>
-        <a href="/admin" onClick={closeMenu}>
-          Admin
-        </a>
-      </div>
+      {isMenuOpen && (
+        <div className="mobile-menu-panel open sm:hidden" id="mobile-menu">
+          <a href="/#about" onClick={closeMenu}>
+            About
+          </a>
+          <a href="/#properties" onClick={closeMenu}>
+            Properties
+          </a>
+          <a href="/#contact" onClick={closeMenu}>
+            Contact
+          </a>
+          <a href="/admin" onClick={closeMenu}>
+            Admin
+          </a>
+        </div>
+      )}
     </header>
   );
 }
