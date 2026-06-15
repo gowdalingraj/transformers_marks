@@ -19,6 +19,7 @@ button {
 .site-header {
   border-bottom: 1px solid hsl(var(--border) / 0.55);
   background: hsl(var(--background) / 0.9);
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   box-shadow: 0 12px 36px rgb(0 0 0 / 0.22);
 }
@@ -45,6 +46,10 @@ button {
 }
 
 .mobile-menu-button {
+  position: relative;
+  z-index: 2;
+  appearance: none;
+  -webkit-appearance: none;
   display: inline-grid;
   width: 2.75rem;
   height: 2.75rem;
@@ -54,6 +59,9 @@ button {
   border-radius: 0.75rem;
   background: hsl(var(--secondary) / 0.86);
   color: hsl(var(--primary));
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-menu-button span {
@@ -72,6 +80,7 @@ button {
 
 .mobile-menu-panel {
   position: absolute;
+  z-index: 1;
   top: calc(100% + 0.25rem);
   left: 1.5rem;
   right: 1.5rem;
@@ -97,12 +106,15 @@ button {
 }
 
 .mobile-menu-panel a {
+  display: block;
   border-radius: 0.5rem;
   color: hsl(var(--foreground));
   padding: 0.85rem 0.9rem;
   font-size: 0.95rem;
   font-weight: 700;
   text-decoration: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-menu-panel a:hover {
@@ -887,6 +899,27 @@ button {
     font-size: 1rem;
   }
 
+  .hero-main {
+    justify-content: flex-start;
+    min-height: auto;
+    padding-top: 7rem;
+    padding-bottom: 4rem;
+  }
+
+  .hero-intro {
+    margin-bottom: 2.25rem;
+  }
+
+  .selection-card {
+    padding: 1.1rem;
+  }
+
+  .icon-circle {
+    width: 2.9rem;
+    height: 2.9rem;
+    margin-bottom: 0.75rem;
+  }
+
   .property-hero {
     align-items: start;
     flex-direction: column;
@@ -913,5 +946,33 @@ button {
   .whatsapp-chatbot {
     right: 1rem;
     bottom: 1rem;
+  }
+}
+
+@media (max-height: 700px) and (min-width: 640px) {
+  .site-header {
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .hero-main {
+    justify-content: flex-start;
+    min-height: auto;
+    padding-top: 6.5rem;
+    padding-bottom: 4rem;
+  }
+
+  .hero-intro {
+    margin-bottom: 2rem;
+  }
+
+  .selection-card {
+    padding: 1.15rem;
+  }
+
+  .icon-circle {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 0.75rem;
   }
 }
