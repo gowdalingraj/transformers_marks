@@ -11,8 +11,11 @@ import { normalizeProperties, properties } from "./data/properties";
 import type { BudgetId, LocationId, Property, PropertyType } from "./types/property";
 
 const ADMIN_STORAGE_KEY = "transformers_marks_properties";
+const ADMIN_STORAGE_VERSION_KEY = "transformers_marks_properties_version";
+const ADMIN_SYNC_PENDING_KEY = "transformers_marks_properties_sync_pending";
 const ADMIN_SESSION_KEY = "transformers_marks_admin_session";
 const ADMIN_PASSWORD = "admin123";
+const ADMIN_STORAGE_VERSION = "1";
 
 function loadProperties() {
   try {
@@ -48,16 +51,72 @@ export default function App() {
     let ignore = false;
 
     async function loadApiProperties() {
+      const stored = window.localStorage.getItem(ADMIN_STORAGE_KEY);
+      const isLegacyCache =
+        Boolean(stored) &&
+        window.localStorage.getItem(ADMIN_STORAGE_VERSION_KEY) !== ADMIN_STORAGE_VERSION;
+      const hasPendingChanges =
+        window.localStorage.getItem(ADMIN_SYNC_PENDING_KEY) === "true";
+
       try {
+        if (stored && hasPendingChanges) {
+          const cachedProperties = normalizeProperties(JSON.parse(stored) as Property[]);
+          const syncResponse = await fetch("/api/properties", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "x-admin-password": ADMIN_PASSWORD
+            },
+            body: JSON.stringify(cachedProperties)
+          });
+
+          if (syncResponse.ok) {
+            window.localStorage.setItem(ADMIN_STORAGE_VERSION_KEY, ADMIN_STORAGE_VERSION);
+            window.localStorage.removeItem(ADMIN_SYNC_PENDING_KEY);
+          }
+
+          return;
+        }
+
         const response = await fetch("/api/properties");
         if (!response.ok) {
           return;
         }
 
         const apiProperties = normalizeProperties((await response.json()) as Property[]);
-        if (!ignore && apiProperties.length > 0) {
-          setPropertyList(apiProperties);
-          window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(apiProperties));
+        let nextProperties = apiProperties;
+
+        if (stored && isLegacyCache) {
+          const cachedProperties = normalizeProperties(JSON.parse(stored) as Property[]);
+          const apiSlugs = new Set(apiProperties.map((property) => property.slug));
+          const locallyAddedProperties = cachedProperties.filter(
+            (property) => !apiSlugs.has(property.slug)
+          );
+
+          if (locallyAddedProperties.length > 0) {
+            nextProperties = [...apiProperties, ...locallyAddedProperties];
+            const restoreResponse = await fetch("/api/properties", {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                "x-admin-password": ADMIN_PASSWORD
+              },
+              body: JSON.stringify(nextProperties)
+            });
+
+            if (!restoreResponse.ok) {
+              window.localStorage.setItem(ADMIN_SYNC_PENDING_KEY, "true");
+            }
+          }
+        }
+
+        if (!ignore && nextProperties.length > 0) {
+          setPropertyList(nextProperties);
+          window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(nextProperties));
+          window.localStorage.setItem(ADMIN_STORAGE_VERSION_KEY, ADMIN_STORAGE_VERSION);
+          if (window.localStorage.getItem(ADMIN_SYNC_PENDING_KEY) !== "true") {
+            window.localStorage.removeItem(ADMIN_SYNC_PENDING_KEY);
+          }
         }
       } catch {
         // Keep local/default data when the API is not running.
@@ -108,19 +167,28 @@ export default function App() {
   async function saveProperties(nextProperties: Property[]) {
     setPropertyList(nextProperties);
     window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(nextProperties));
+    window.localStorage.setItem(ADMIN_STORAGE_VERSION_KEY, ADMIN_STORAGE_VERSION);
+    window.localStorage.setItem(ADMIN_SYNC_PENDING_KEY, "true");
 
-    const response = await fetch("/api/properties", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-password": ADMIN_PASSWORD
-      },
-      body: JSON.stringify(nextProperties)
-    });
+    try {
+      const response = await fetch("/api/properties", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": ADMIN_PASSWORD
+        },
+        body: JSON.stringify(nextProperties)
+      });
 
-    if (!response.ok) {
-      throw new Error("Unable to save properties to API.");
+      if (response.ok) {
+        window.localStorage.removeItem(ADMIN_SYNC_PENDING_KEY);
+        return "synced" as const;
+      }
+    } catch {
+      // The local copy remains authoritative until a later sync succeeds.
     }
+
+    return "local" as const;
   }
 
   async function resetProperties() {
@@ -138,6 +206,8 @@ export default function App() {
           const apiProperties = normalizeProperties((await reloaded.json()) as Property[]);
           setPropertyList(apiProperties);
           window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(apiProperties));
+          window.localStorage.setItem(ADMIN_STORAGE_VERSION_KEY, ADMIN_STORAGE_VERSION);
+          window.localStorage.removeItem(ADMIN_SYNC_PENDING_KEY);
           return apiProperties;
         }
       }
@@ -147,6 +217,8 @@ export default function App() {
 
     setPropertyList(properties);
     window.localStorage.removeItem(ADMIN_STORAGE_KEY);
+    window.localStorage.removeItem(ADMIN_STORAGE_VERSION_KEY);
+    window.localStorage.removeItem(ADMIN_SYNC_PENDING_KEY);
     return properties;
   }
 
