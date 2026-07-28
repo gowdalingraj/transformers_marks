@@ -676,6 +676,13 @@ button {
   font-weight: 700;
 }
 
+.admin-help {
+  margin: 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 .admin-field input,
 .admin-field select,
 .admin-field textarea {
@@ -717,6 +724,66 @@ button {
   border: 1px solid hsl(var(--border));
   border-radius: 0.6rem;
   object-fit: cover;
+}
+
+.admin-units {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid hsl(var(--border));
+}
+
+.admin-units-header,
+.admin-unit-card-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-units-header h2 {
+  margin: 0 0 0.25rem;
+  color: hsl(var(--foreground));
+  font-size: 1.15rem;
+}
+
+.admin-units-header button,
+.admin-unit-card-header button {
+  flex: 0 0 auto;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.45rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  padding: 0.55rem 0.75rem;
+  font-weight: 700;
+}
+
+.admin-unit-card-header button {
+  color: hsl(var(--destructive));
+}
+
+.admin-unit-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-unit-card {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.8rem;
+  background: hsl(var(--background) / 0.5);
+  padding: 1rem;
+}
+
+.admin-empty {
+  margin: 0;
+  border: 1px dashed hsl(var(--border));
+  border-radius: 0.7rem;
+  color: hsl(var(--muted-foreground));
+  padding: 1rem;
+  text-align: center;
 }
 
 .admin-error {
