@@ -31,7 +31,10 @@ export function Hero({
   onClearBudget
 }: HeroProps) {
   return (
-    <main className="hero-main flex-1 flex flex-col items-center justify-center px-6 py-32 relative z-10">
+    <main
+      id="about"
+      className="hero-main flex-1 flex flex-col items-center justify-center px-6 py-32 relative z-10"
+    >
       <div className="hero-intro text-center mb-16">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium mb-4">
           Find Your Perfect <span className="text-primary italic">Home</span>

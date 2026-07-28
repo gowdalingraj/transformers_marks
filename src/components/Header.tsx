@@ -15,17 +15,17 @@ export function Header() {
 
         <ul className="hidden sm:flex items-center gap-6 md:gap-8">
           <li>
-            <a href="#about" className="nav-link text-sm">
+            <a href="/#about" className="nav-link text-sm">
               About
             </a>
           </li>
           <li>
-            <a href="#properties" className="nav-link text-sm">
+            <a href="/#properties" className="nav-link text-sm">
               Properties
             </a>
           </li>
           <li>
-            <a href="#contact" className="nav-link text-sm">
+            <a href="/#contact" className="nav-link text-sm">
               Contact
             </a>
           </li>
