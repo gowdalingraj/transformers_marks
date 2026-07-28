@@ -8,7 +8,7 @@ type AdminPageProps = {
   properties: Property[];
   onLogin: () => void;
   onLogout: () => void;
-  onSave: (properties: Property[]) => Promise<void>;
+  onSave: (properties: Property[]) => Promise<"synced" | "local">;
   onReset: () => Promise<Property[]>;
   onBack: () => void;
 };
@@ -99,14 +99,51 @@ export function AdminPage({
     } as Pick<Property, typeof key>);
   }
 
-  function updateUnits(value: string) {
-    const units = value
-      .split("\n")
-      .map((line) => line.split("|").map((part) => part.trim()))
-      .filter((parts) => parts.length >= 2 && parts[0])
-      .map<PropertyUnit>(([unit, text, image]) => ({ unit, text, image: image || activeProperty?.floorPlanImage || "" }));
+  function updateUnit(index: number, patch: Partial<PropertyUnit>) {
+    if (!activeProperty) {
+      return;
+    }
 
-    updateProperty({ units });
+    updateProperty({
+      units: activeProperty.units.map((unit, unitIndex) =>
+        unitIndex === index ? { ...unit, ...patch } : unit
+      )
+    });
+  }
+
+  function addUnit() {
+    if (!activeProperty) {
+      return;
+    }
+
+    updateProperty({
+      units: [
+        ...activeProperty.units,
+        {
+          unit: `Unit ${activeProperty.units.length + 1}`,
+          text: "Enter the unit size, configuration and facing.",
+          image: activeProperty.floorPlanImage || activeProperty.image
+        }
+      ]
+    });
+  }
+
+  function removeUnit(index: number) {
+    if (!activeProperty) {
+      return;
+    }
+
+    updateProperty({
+      units: activeProperty.units.filter((_, unitIndex) => unitIndex !== index)
+    });
+  }
+
+  async function uploadUnitImage(index: number, file: File | undefined) {
+    if (!file) {
+      return;
+    }
+
+    updateUnit(index, { image: await readFileAsDataUrl(file) });
   }
 
   async function uploadCardImage(file: File | undefined) {
@@ -255,10 +292,14 @@ export function AdminPage({
               type="button"
               onClick={async () => {
                 try {
-                  await onSave(drafts);
-                  setSaveStatus("Saved to database.");
+                  const result = await onSave(drafts);
+                  setSaveStatus(
+                    result === "synced"
+                      ? "Saved to the website and database."
+                      : "Saved on this device. Database sync will retry automatically."
+                  );
                 } catch {
-                  setSaveStatus("Could not save to API. Check the API server and database.");
+                  setSaveStatus("Could not save. The browser storage may be full.");
                 }
               }}
             >
@@ -359,14 +400,18 @@ export function AdminPage({
                   onChange={(event) => updateProperty({ price: event.target.value })}
                 />
               </AdminField>
-              <AdminField label="Card Image URL">
+              <AdminField label="Property card image">
+                <p className="admin-help">
+                  This image appears on the homepage card. Paste an image URL or upload a file.
+                </p>
                 <input
+                  aria-label="Card image URL"
+                  placeholder="https://example.com/property.jpg"
                   value={activeProperty.image}
                   onChange={(event) => updateProperty({ image: event.target.value })}
                 />
-              </AdminField>
-              <AdminField label="Upload Card Image">
                 <input
+                  aria-label="Upload card image"
                   accept="image/*"
                   type="file"
                   onChange={(event) => {
@@ -496,14 +541,70 @@ export function AdminPage({
                   onChange={(event) => updateProperty({ floorPlan: event.target.value })}
                 />
               </AdminField>
-              <AdminField label="Units: title | text | image URL">
-                <textarea
-                  value={activeProperty.units
-                    .map((unit) => `${unit.unit} | ${unit.text} | ${unit.image}`)
-                    .join("\n")}
-                  onChange={(event) => updateUnits(event.target.value)}
-                />
-              </AdminField>
+              <section className="admin-units" aria-labelledby="admin-units-title">
+                <div className="admin-units-header">
+                  <div>
+                    <h2 id="admin-units-title">Unit tiles</h2>
+                    <p className="admin-help">
+                      Add one tile per unit. Each tile can use its own uploaded image or image URL.
+                    </p>
+                  </div>
+                  <button type="button" onClick={addUnit}>
+                    Add Unit Tile
+                  </button>
+                </div>
+                {activeProperty.units.length === 0 && (
+                  <p className="admin-empty">No unit tiles yet. Select “Add Unit Tile” to create one.</p>
+                )}
+                <div className="admin-unit-list">
+                  {activeProperty.units.map((unit, index) => (
+                    <article className="admin-unit-card" key={index}>
+                      <div className="admin-unit-card-header">
+                        <strong>Unit tile {index + 1}</strong>
+                        <button type="button" onClick={() => removeUnit(index)}>
+                          Remove
+                        </button>
+                      </div>
+                      <AdminField label="Unit title">
+                        <input
+                          value={unit.unit}
+                          onChange={(event) => updateUnit(index, { unit: event.target.value })}
+                        />
+                      </AdminField>
+                      <AdminField label="Unit details">
+                        <textarea
+                          value={unit.text}
+                          onChange={(event) => updateUnit(index, { text: event.target.value })}
+                        />
+                      </AdminField>
+                      <AdminField label="Unit image">
+                        <input
+                          aria-label={`Unit ${index + 1} image URL`}
+                          placeholder="https://example.com/floor-plan.jpg"
+                          value={unit.image}
+                          onChange={(event) => updateUnit(index, { image: event.target.value })}
+                        />
+                        <input
+                          aria-label={`Upload unit ${index + 1} image`}
+                          accept="image/*"
+                          type="file"
+                          onChange={(event) => {
+                            void uploadUnitImage(index, event.target.files?.[0]);
+                            event.target.value = "";
+                          }}
+                        />
+                        {unit.image && (
+                          <img
+                            className="admin-image-preview"
+                            src={unit.image}
+                            alt={`${unit.unit || `Unit ${index + 1}`} preview`}
+                          />
+                        )}
+                      </AdminField>
+                    </article>
+                  ))}
+                </div>
+              </section>
             </form>
           </section>
         )}
