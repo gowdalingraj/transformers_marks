@@ -1,4 +1,4 @@
-import { getProperties, replaceProperties } from "../server/property-store.js";
+import { getProperties, replaceProperties } from "../server/blob-property-store.js";
 
 export default async function handler(request, response) {
   response.setHeader("Cache-Control", "no-store");
