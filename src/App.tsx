@@ -15,7 +15,7 @@ const ADMIN_STORAGE_VERSION_KEY = "transformers_marks_properties_version";
 const ADMIN_SYNC_PENDING_KEY = "transformers_marks_properties_sync_pending";
 const ADMIN_SESSION_KEY = "transformers_marks_admin_session";
 const ADMIN_PASSWORD = "admin123";
-const ADMIN_STORAGE_VERSION = "1";
+const ADMIN_STORAGE_VERSION = "2";
 
 function loadProperties() {
   try {
@@ -46,6 +46,19 @@ export default function App() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  useEffect(() => {
+    const sectionId = window.location.hash.slice(1);
+    if (!sectionId) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [route]);
 
   useEffect(() => {
     let ignore = false;
@@ -166,9 +179,16 @@ export default function App() {
 
   async function saveProperties(nextProperties: Property[]) {
     setPropertyList(nextProperties);
-    window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(nextProperties));
-    window.localStorage.setItem(ADMIN_STORAGE_VERSION_KEY, ADMIN_STORAGE_VERSION);
-    window.localStorage.setItem(ADMIN_SYNC_PENDING_KEY, "true");
+    let savedLocally = true;
+
+    try {
+      window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(nextProperties));
+      window.localStorage.setItem(ADMIN_STORAGE_VERSION_KEY, ADMIN_STORAGE_VERSION);
+      window.localStorage.setItem(ADMIN_SYNC_PENDING_KEY, "true");
+    } catch {
+      // Large uploaded images can exceed localStorage. Still attempt the database save.
+      savedLocally = false;
+    }
 
     try {
       const response = await fetch("/api/properties", {
@@ -181,11 +201,19 @@ export default function App() {
       });
 
       if (response.ok) {
-        window.localStorage.removeItem(ADMIN_SYNC_PENDING_KEY);
+        try {
+          window.localStorage.removeItem(ADMIN_SYNC_PENDING_KEY);
+        } catch {
+          // The database is authoritative when browser storage is unavailable.
+        }
         return "synced" as const;
       }
     } catch {
       // The local copy remains authoritative until a later sync succeeds.
+    }
+
+    if (!savedLocally) {
+      throw new Error("The property could not be saved to the database or this browser.");
     }
 
     return "local" as const;
