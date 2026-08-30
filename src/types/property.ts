@@ -26,6 +26,7 @@ export type Property = {
   masterPlan: string;
   floorPlanTitle: string;
   floorPlanImage: string;
+  floorPlanImages: string[];
   floorPlan: string;
   units: PropertyUnit[];
 };
