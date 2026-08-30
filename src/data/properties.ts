@@ -94,6 +94,7 @@ const baseProperties: Omit<
   | "masterPlan"
   | "floorPlanTitle"
   | "floorPlanImage"
+  | "floorPlanImages"
   | "floorPlan"
   | "units"
 >[] = [
@@ -232,6 +233,7 @@ export const properties: Property[] = baseProperties.map((property, index) => ({
   masterPlan: "Arrival court, parking, access lobby and landscaped community zones.",
   floorPlanTitle: "Floor Plans",
   floorPlanImage: planImages[(index + 1) % planImages.length],
+  floorPlanImages: [planImages[(index + 1) % planImages.length]],
   floorPlan: "Typical floor layouts with efficient circulation, natural light and well-planned homes.",
   units: defaultUnits
 }));
@@ -243,6 +245,7 @@ export function normalizeProperty(property: Property | Record<string, unknown>):
     masterPlanImage?: string;
     floorPlanTitle?: string;
     floorPlanImage?: string;
+    floorPlanImages?: string[];
     floorPlan?: string;
     units?: Array<{
       unit?: string;
@@ -254,12 +257,19 @@ export function normalizeProperty(property: Property | Record<string, unknown>):
     }>;
   };
 
+  const floorPlanImages = Array.isArray(legacy.floorPlanImages)
+    ? legacy.floorPlanImages.filter((image): image is string => Boolean(image))
+    : legacy.floorPlanImage
+      ? [legacy.floorPlanImage]
+      : [planImages[1]];
+
   return {
     ...(legacy as Property),
     masterPlanTitle: legacy.masterPlanTitle || "Master Plan",
     masterPlanImage: legacy.masterPlanImage || planImages[0],
     floorPlanTitle: legacy.floorPlanTitle || "Floor Plans",
-    floorPlanImage: legacy.floorPlanImage || planImages[1],
+    floorPlanImage: floorPlanImages[0] || "",
+    floorPlanImages,
     floorPlan: legacy.floorPlan || legacy.terracePlan || "",
     units: (legacy.units ?? []).map((unit, index) => ({
       unit: unit.unit || `Unit ${index + 1}`,
