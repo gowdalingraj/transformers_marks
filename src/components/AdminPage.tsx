@@ -32,7 +32,35 @@ const ADMIN_PASSWORD = "admin123";
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
+    reader.onload = () => {
+      const original = String(reader.result);
+      const image = new Image();
+
+      image.onload = () => {
+        const maxDimension = 1800;
+        const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+
+        if (scale === 1 && file.size < 350_000) {
+          resolve(original);
+          return;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+
+        if (!context) {
+          resolve(original);
+          return;
+        }
+
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/webp", 0.82));
+      };
+      image.onerror = () => resolve(original);
+      image.src = original;
+    };
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
@@ -57,6 +85,22 @@ export function AdminPage({
     [activeSlug, drafts]
   );
 
+  function uniqueSlug(value: string, currentSlug?: string) {
+    const base = slugify(value) || "property";
+    const used = new Set(
+      drafts.filter((property) => property.slug !== currentSlug).map((property) => property.slug)
+    );
+    let candidate = base;
+    let suffix = 2;
+
+    while (used.has(candidate)) {
+      candidate = `${base}-${suffix}`;
+      suffix += 1;
+    }
+
+    return candidate;
+  }
+
   useEffect(() => {
     setDrafts(properties);
     setActiveSlug((currentSlug) => {
@@ -73,20 +117,22 @@ export function AdminPage({
       return;
     }
 
+    const nextSlug = patch.name ? uniqueSlug(patch.name, activeProperty.slug) : activeProperty.slug;
+
     setDrafts((current) =>
       current.map((property) =>
         property.slug === activeProperty.slug
           ? {
               ...property,
               ...patch,
-              slug: patch.name ? slugify(patch.name) : property.slug
+              slug: nextSlug
             }
           : property
       )
     );
 
     if (patch.name) {
-      setActiveSlug(slugify(patch.name));
+      setActiveSlug(nextSlug);
     }
   }
 
@@ -166,21 +212,36 @@ export function AdminPage({
     updateProperty({ gallery: [...activeProperty.gallery, ...uploadedImages] });
   }
 
-  async function uploadPlanImage(
-    key: "masterPlanImage" | "floorPlanImage",
-    file: File | undefined
-  ) {
+  function updateFloorPlanImages(images: string[]) {
+    updateProperty({ floorPlanImages: images, floorPlanImage: images[0] ?? "" });
+  }
+
+  async function uploadFloorPlanImages(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0 || !activeProperty) {
+      return;
+    }
+
+    const uploadedImages = await Promise.all(
+      Array.from(fileList).map((file) => readFileAsDataUrl(file))
+    );
+
+    updateFloorPlanImages([...activeProperty.floorPlanImages, ...uploadedImages]);
+  }
+
+  async function uploadPlanImage(file: File | undefined) {
     if (!file) {
       return;
     }
 
-    updateProperty({ [key]: await readFileAsDataUrl(file) } as Pick<Property, typeof key>);
+    updateProperty({ masterPlanImage: await readFileAsDataUrl(file) });
   }
 
   function addProperty() {
+    const nextNumber = drafts.length + 1;
+    const name = `New Property ${nextNumber}`;
     const created: Property = {
-      slug: `new-property-${drafts.length + 1}`,
-      name: `New Property ${drafts.length + 1}`,
+      slug: uniqueSlug(name),
+      name,
       type: "apartments",
       location: "Whitefield",
       locationId: "whitefield",
@@ -202,6 +263,9 @@ export function AdminPage({
       floorPlanTitle: "Floor Plans",
       floorPlanImage:
         "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1200&h=800&fit=crop",
+      floorPlanImages: [
+        "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1200&h=800&fit=crop"
+      ],
       floorPlan: "Describe floor plans here.",
       units: [
         {
@@ -299,7 +363,9 @@ export function AdminPage({
                       : "Saved on this device. Database sync will retry automatically."
                   );
                 } catch {
-                  setSaveStatus("Could not save. The browser storage may be full.");
+                  setSaveStatus(
+                    "Could not save locally or sync with the database. Check the deployment and database connection."
+                  );
                 }
               }}
             >
@@ -419,11 +485,13 @@ export function AdminPage({
                     event.target.value = "";
                   }}
                 />
-                <img
-                  className="admin-image-preview"
-                  src={activeProperty.image}
-                  alt={`${activeProperty.name} card preview`}
-                />
+                {activeProperty.image && (
+                  <ImagePreview
+                    src={activeProperty.image}
+                    alt={`${activeProperty.name} card preview`}
+                    onRemove={() => updateProperty({ image: "" })}
+                  />
+                )}
               </AdminField>
               <AdminField label="Gallery URLs, one per line">
                 <textarea
@@ -443,10 +511,18 @@ export function AdminPage({
                 />
                 <div className="admin-gallery-preview">
                   {activeProperty.gallery.map((image, index) => (
-                    <img
+                    <ImagePreview
                       key={`${image}-${index}`}
                       src={image}
                       alt={`${activeProperty.name} gallery preview ${index + 1}`}
+                      compact
+                      onRemove={() =>
+                        updateProperty({
+                          gallery: activeProperty.gallery.filter(
+                            (_, imageIndex) => imageIndex !== index
+                          )
+                        })
+                      }
                     />
                   ))}
                 </div>
@@ -492,15 +568,17 @@ export function AdminPage({
                   accept="image/*"
                   type="file"
                   onChange={(event) => {
-                    void uploadPlanImage("masterPlanImage", event.target.files?.[0]);
+                    void uploadPlanImage(event.target.files?.[0]);
                     event.target.value = "";
                   }}
                 />
-                <img
-                  className="admin-image-preview"
-                  src={activeProperty.masterPlanImage}
-                  alt={`${activeProperty.name} master plan preview`}
-                />
+                {activeProperty.masterPlanImage && (
+                  <ImagePreview
+                    src={activeProperty.masterPlanImage}
+                    alt={`${activeProperty.name} master plan preview`}
+                    onRemove={() => updateProperty({ masterPlanImage: "" })}
+                  />
+                )}
               </AdminField>
               <AdminField label="Master Plan Text">
                 <textarea
@@ -514,26 +592,47 @@ export function AdminPage({
                   onChange={(event) => updateProperty({ floorPlanTitle: event.target.value })}
                 />
               </AdminField>
-              <AdminField label="Floor Plan Image URL">
-                <input
-                  value={activeProperty.floorPlanImage}
-                  onChange={(event) => updateProperty({ floorPlanImage: event.target.value })}
+              <AdminField label="Floor Plan Image URLs, one per line">
+                <textarea
+                  value={activeProperty.floorPlanImages.join("\n")}
+                  onChange={(event) =>
+                    updateFloorPlanImages(
+                      event.target.value
+                        .split("\n")
+                        .map((line) => line.trim())
+                        .filter(Boolean)
+                    )
+                  }
                 />
               </AdminField>
-              <AdminField label="Upload Floor Plan Image">
+              <AdminField label="Upload Floor Plan Images">
+                <p className="admin-help">Select one or more images. New images are added to the list.</p>
                 <input
                   accept="image/*"
+                  multiple
                   type="file"
                   onChange={(event) => {
-                    void uploadPlanImage("floorPlanImage", event.target.files?.[0]);
+                    void uploadFloorPlanImages(event.target.files);
                     event.target.value = "";
                   }}
                 />
-                <img
-                  className="admin-image-preview"
-                  src={activeProperty.floorPlanImage}
-                  alt={`${activeProperty.name} floor plan preview`}
-                />
+                <div className="admin-gallery-preview">
+                  {activeProperty.floorPlanImages.map((image, index) => (
+                    <ImagePreview
+                      key={`${image}-${index}`}
+                      src={image}
+                      alt={`${activeProperty.name} floor plan preview ${index + 1}`}
+                      compact
+                      onRemove={() =>
+                        updateFloorPlanImages(
+                          activeProperty.floorPlanImages.filter(
+                            (_, imageIndex) => imageIndex !== index
+                          )
+                        )
+                      }
+                    />
+                  ))}
+                </div>
               </AdminField>
               <AdminField label="Floor Plan Text">
                 <textarea
@@ -594,10 +693,10 @@ export function AdminPage({
                           }}
                         />
                         {unit.image && (
-                          <img
-                            className="admin-image-preview"
+                          <ImagePreview
                             src={unit.image}
                             alt={`${unit.unit || `Unit ${index + 1}`} preview`}
+                            onRemove={() => updateUnit(index, { image: "" })}
                           />
                         )}
                       </AdminField>
@@ -625,5 +724,32 @@ function AdminField({
       <span>{label}</span>
       {children}
     </label>
+  );
+}
+
+function ImagePreview({
+  src,
+  alt,
+  onRemove,
+  compact = false
+}: {
+  src: string;
+  alt: string;
+  onRemove: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`admin-image-preview-wrap ${compact ? "admin-image-preview-compact" : ""}`}>
+      <img className="admin-image-preview" src={src} alt={alt} />
+      <button
+        className="admin-image-remove"
+        type="button"
+        aria-label={`Remove ${alt}`}
+        title="Remove image"
+        onClick={onRemove}
+      >
+        ×
+      </button>
+    </div>
   );
 }
