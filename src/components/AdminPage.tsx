@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import type { ReactNode } from "react";
 import type { BudgetId, LocationId, Property, PropertyType, PropertyUnit } from "../types/property";
 import { BackButton } from "./BackButton";
@@ -28,6 +29,9 @@ function slugify(value: string) {
 }
 
 const ADMIN_PASSWORD = "admin123";
+const USE_LIVE_STORAGE = import.meta.env.VITE_USE_LIVE_STORAGE
+  ? import.meta.env.VITE_USE_LIVE_STORAGE === "true"
+  : import.meta.env.PROD;
 
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -84,6 +88,46 @@ export function AdminPage({
     () => drafts.find((property) => property.slug === activeSlug) ?? drafts[0],
     [activeSlug, drafts]
   );
+
+  async function storeImages(files: File[]) {
+    if (!USE_LIVE_STORAGE) {
+      return Promise.all(files.map((file) => readFileAsDataUrl(file)));
+    }
+
+    setSaveStatus(files.length === 1 ? "Uploading image..." : "Uploading images...");
+
+    try {
+      const urls = await Promise.all(
+        files.map(async (file, index) => {
+          const dataUrl = await readFileAsDataUrl(file);
+          const imageBlob = await (await fetch(dataUrl)).blob();
+          const extension = imageBlob.type.split("/")[1]?.replace("jpeg", "jpg") || "webp";
+          const safeName = file.name
+            .replace(/\.[^.]+$/, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "") || "property-image";
+          const result = await upload(
+            `property-images/${Date.now()}-${index}-${safeName}.${extension}`,
+            imageBlob,
+            {
+              access: "public",
+              handleUploadUrl: "/api/upload",
+              clientPayload: JSON.stringify({ password: ADMIN_PASSWORD })
+            }
+          );
+
+          return result.url;
+        })
+      );
+
+      setSaveStatus(files.length === 1 ? "Image uploaded." : "Images uploaded.");
+      return urls;
+    } catch {
+      setSaveStatus("Image upload failed. Check that Vercel Blob is connected.");
+      return null;
+    }
+  }
 
   function uniqueSlug(value: string, currentSlug?: string) {
     const base = slugify(value) || "property";
@@ -189,7 +233,10 @@ export function AdminPage({
       return;
     }
 
-    updateUnit(index, { image: await readFileAsDataUrl(file) });
+    const images = await storeImages([file]);
+    if (images) {
+      updateUnit(index, { image: images[0] });
+    }
   }
 
   async function uploadCardImage(file: File | undefined) {
@@ -197,7 +244,10 @@ export function AdminPage({
       return;
     }
 
-    updateProperty({ image: await readFileAsDataUrl(file) });
+    const images = await storeImages([file]);
+    if (images) {
+      updateProperty({ image: images[0] });
+    }
   }
 
   async function uploadGalleryImages(fileList: FileList | null) {
@@ -205,11 +255,11 @@ export function AdminPage({
       return;
     }
 
-    const uploadedImages = await Promise.all(
-      Array.from(fileList).map((file) => readFileAsDataUrl(file))
-    );
+    const uploadedImages = await storeImages(Array.from(fileList));
 
-    updateProperty({ gallery: [...activeProperty.gallery, ...uploadedImages] });
+    if (uploadedImages) {
+      updateProperty({ gallery: [...activeProperty.gallery, ...uploadedImages] });
+    }
   }
 
   function updateFloorPlanImages(images: string[]) {
@@ -221,11 +271,11 @@ export function AdminPage({
       return;
     }
 
-    const uploadedImages = await Promise.all(
-      Array.from(fileList).map((file) => readFileAsDataUrl(file))
-    );
+    const uploadedImages = await storeImages(Array.from(fileList));
 
-    updateFloorPlanImages([...activeProperty.floorPlanImages, ...uploadedImages]);
+    if (uploadedImages) {
+      updateFloorPlanImages([...activeProperty.floorPlanImages, ...uploadedImages]);
+    }
   }
 
   async function uploadPlanImage(file: File | undefined) {
@@ -233,7 +283,10 @@ export function AdminPage({
       return;
     }
 
-    updateProperty({ masterPlanImage: await readFileAsDataUrl(file) });
+    const images = await storeImages([file]);
+    if (images) {
+      updateProperty({ masterPlanImage: images[0] });
+    }
   }
 
   function addProperty() {
@@ -359,13 +412,11 @@ export function AdminPage({
                   const result = await onSave(drafts);
                   setSaveStatus(
                     result === "synced"
-                      ? "Saved to the website and database."
-                      : "Saved on this device. Database sync will retry automatically."
+                      ? "Saved to the live website. Other users can see the changes now."
+                      : "Saved on this device only. Check that Vercel Blob is connected."
                   );
                 } catch {
-                  setSaveStatus(
-                    "Could not save locally or sync with the database. Check the deployment and database connection."
-                  );
+                  setSaveStatus("Could not save. This browser's storage may be full.");
                 }
               }}
             >
