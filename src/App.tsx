@@ -16,6 +16,9 @@ const ADMIN_SYNC_PENDING_KEY = "transformers_marks_properties_sync_pending";
 const ADMIN_SESSION_KEY = "transformers_marks_admin_session";
 const ADMIN_PASSWORD = "admin123";
 const ADMIN_STORAGE_VERSION = "2";
+const USE_LIVE_STORAGE = import.meta.env.VITE_USE_LIVE_STORAGE
+  ? import.meta.env.VITE_USE_LIVE_STORAGE === "true"
+  : import.meta.env.PROD;
 
 function loadProperties() {
   try {
@@ -61,6 +64,40 @@ export default function App() {
   }, [route]);
 
   useEffect(() => {
+    if (USE_LIVE_STORAGE || window.localStorage.getItem(ADMIN_STORAGE_KEY)) {
+      return;
+    }
+
+    let ignore = false;
+
+    async function loadJsonProperties() {
+      try {
+        const response = await fetch("/properties.json", { cache: "no-store" });
+        if (!response.ok) {
+          return;
+        }
+
+        const jsonProperties = normalizeProperties((await response.json()) as Property[]);
+        if (!ignore && jsonProperties.length > 0) {
+          setPropertyList(jsonProperties);
+        }
+      } catch {
+        // Keep the bundled defaults if the JSON file cannot be loaded.
+      }
+    }
+
+    void loadJsonProperties();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!USE_LIVE_STORAGE) {
+      return;
+    }
+
     let ignore = false;
 
     async function loadApiProperties() {
@@ -91,7 +128,7 @@ export default function App() {
           return;
         }
 
-        const response = await fetch("/api/properties");
+        const response = await fetch("/api/properties", { cache: "no-store" });
         if (!response.ok) {
           return;
         }
@@ -184,10 +221,22 @@ export default function App() {
     try {
       window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(nextProperties));
       window.localStorage.setItem(ADMIN_STORAGE_VERSION_KEY, ADMIN_STORAGE_VERSION);
-      window.localStorage.setItem(ADMIN_SYNC_PENDING_KEY, "true");
+      if (USE_LIVE_STORAGE) {
+        window.localStorage.setItem(ADMIN_SYNC_PENDING_KEY, "true");
+      } else {
+        window.localStorage.removeItem(ADMIN_SYNC_PENDING_KEY);
+      }
     } catch {
-      // Large uploaded images can exceed localStorage. Still attempt the database save.
+      // Large uploaded images can exceed localStorage.
       savedLocally = false;
+    }
+
+    if (!USE_LIVE_STORAGE) {
+      if (!savedLocally) {
+        throw new Error("The property could not be saved in this browser.");
+      }
+
+      return "local" as const;
     }
 
     try {
@@ -204,7 +253,7 @@ export default function App() {
         try {
           window.localStorage.removeItem(ADMIN_SYNC_PENDING_KEY);
         } catch {
-          // The database is authoritative when browser storage is unavailable.
+          // Live storage is authoritative when browser storage is unavailable.
         }
         return "synced" as const;
       }
@@ -213,34 +262,36 @@ export default function App() {
     }
 
     if (!savedLocally) {
-      throw new Error("The property could not be saved to the database or this browser.");
+      throw new Error("The property could not be saved to the live website or this browser.");
     }
 
     return "local" as const;
   }
 
   async function resetProperties() {
-    try {
-      const response = await fetch("/api/properties/reset", {
-        method: "POST",
-        headers: {
-          "x-admin-password": ADMIN_PASSWORD
-        }
-      });
+    if (USE_LIVE_STORAGE) {
+      try {
+        const response = await fetch("/api/properties/reset", {
+          method: "POST",
+          headers: {
+            "x-admin-password": ADMIN_PASSWORD
+          }
+        });
 
-      if (response.ok) {
-        const reloaded = await fetch("/api/properties");
-        if (reloaded.ok) {
-          const apiProperties = normalizeProperties((await reloaded.json()) as Property[]);
-          setPropertyList(apiProperties);
-          window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(apiProperties));
-          window.localStorage.setItem(ADMIN_STORAGE_VERSION_KEY, ADMIN_STORAGE_VERSION);
-          window.localStorage.removeItem(ADMIN_SYNC_PENDING_KEY);
-          return apiProperties;
+        if (response.ok) {
+          const reloaded = await fetch("/api/properties", { cache: "no-store" });
+          if (reloaded.ok) {
+            const apiProperties = normalizeProperties((await reloaded.json()) as Property[]);
+            setPropertyList(apiProperties);
+            window.localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(apiProperties));
+            window.localStorage.setItem(ADMIN_STORAGE_VERSION_KEY, ADMIN_STORAGE_VERSION);
+            window.localStorage.removeItem(ADMIN_SYNC_PENDING_KEY);
+            return apiProperties;
+          }
         }
+      } catch {
+        // Fall through to local reset.
       }
-    } catch {
-      // Fall through to local reset.
     }
 
     setPropertyList(properties);
