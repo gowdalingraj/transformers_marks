@@ -12,6 +12,10 @@ type PropertyDetailProps = {
 export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailProps) {
   const [activeImage, setActiveImage] = useState(0);
   const images = property.gallery.length > 0 ? property.gallery : [property.image];
+  const floorPlanImages =
+    property.floorPlanImages.length > 0
+      ? property.floorPlanImages
+      : [property.floorPlanImage].filter(Boolean);
 
   function downloadBrochure() {
     const brochure = [
@@ -210,9 +214,21 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
             </div>
           </div>
           <div className="property-plan-card property-plan-card-offset">
-            <img src={property.floorPlanImage} alt={property.floorPlanTitle} />
             <h3>{property.floorPlanTitle}</h3>
             <p>{property.floorPlan}</p>
+            {floorPlanImages.length > 0 ? (
+              <div className="property-floor-plan-images">
+                {floorPlanImages.map((image, index) => (
+                  <img
+                    key={`${image}-${index}`}
+                    src={image}
+                    alt={`${property.floorPlanTitle} ${index + 1}`}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p>No floor plan images have been added yet.</p>
+            )}
           </div>
         </section>
 
