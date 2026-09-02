@@ -19,8 +19,10 @@ export type Property = {
   gallery: string[];
   aboutTitle: string;
   aboutText: string;
+  brochureUrl: string;
   facts: string[];
   amenities: string[];
+  amenityImages: string[];
   masterPlanTitle: string;
   masterPlanImage: string;
   masterPlan: string;
