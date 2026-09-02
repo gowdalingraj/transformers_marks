@@ -25,13 +25,16 @@ export default async function handler(request, response) {
           throw new Error("Unauthorized");
         }
 
-        if (!pathname.startsWith("property-images/")) {
+        const isImage = pathname.startsWith("property-images/");
+        const isBrochure = pathname.startsWith("property-documents/");
+
+        if (!isImage && !isBrochure) {
           throw new Error("Invalid upload path");
         }
 
         return {
-          allowedContentTypes: ["image/*"],
-          maximumSizeInBytes: 5_000_000,
+          allowedContentTypes: isBrochure ? ["application/pdf"] : ["image/*"],
+          maximumSizeInBytes: isBrochure ? 15_000_000 : 5_000_000,
           addRandomSuffix: true,
           cacheControlMaxAge: 31_536_000
         };
@@ -42,6 +45,6 @@ export default async function handler(request, response) {
     response.status(200).json(result);
   } catch (error) {
     console.error(error);
-    response.status(400).json({ error: "Image upload failed" });
+    response.status(400).json({ error: "Upload failed" });
   }
 }
