@@ -31,6 +31,8 @@ const amenities = [
   "Skating Rink"
 ];
 
+const amenityImages = galleryImages.slice(0, amenities.length);
+
 const units = [
   {
     unit: "406 - 3 BHK East Facing",
@@ -107,13 +109,16 @@ export const defaultProperties = baseProperties.map(
     gallery: makeGallery(image, index),
     aboutTitle: "2 & 3 BHK Premium Residences",
     aboutText: `At ${name}, residents will find inspiration in architectural design, landscaped open spaces, planned amenities and thoughtful community areas. Located in ${location}, the project gives convenient access to growing residential, commercial, education and healthcare destinations.`,
+    brochureUrl: "",
     facts,
     amenities,
+    amenityImages,
     masterPlanTitle: "Master Plan",
     masterPlanImage: planImages[index % planImages.length],
     masterPlan: "Arrival court, parking, access lobby and landscaped community zones.",
     floorPlanTitle: "Floor Plans",
     floorPlanImage: planImages[(index + 1) % planImages.length],
+    floorPlanImages: [planImages[(index + 1) % planImages.length]],
     floorPlan: "Typical floor layouts with efficient circulation, natural light and well-planned homes.",
     units
   })
