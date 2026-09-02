@@ -160,6 +160,11 @@ export function AdminPage({
   }
 
   async function storeBrochure(file: File) {
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      setSaveStatus("Please choose a PDF file.");
+      return null;
+    }
+
     if (!USE_LIVE_STORAGE) {
       return readFileAsRawDataUrl(file);
     }
@@ -172,13 +177,17 @@ export function AdminPage({
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "") || "property-brochure";
-      const result = await upload(`property-documents/${Date.now()}-${safeName}.pdf`, file, {
+      const pdfFile =
+        file.type === "application/pdf"
+          ? file
+          : new File([file], file.name, { type: "application/pdf" });
+      const result = await upload(`property-documents/${Date.now()}-${safeName}.pdf`, pdfFile, {
         access: "public",
         handleUploadUrl: "/api/upload",
         clientPayload: JSON.stringify({ password: ADMIN_PASSWORD })
       });
 
-      setSaveStatus("Brochure uploaded.");
+      setSaveStatus("Brochure uploaded. Click Save Changes to publish it.");
       return result.url;
     } catch {
       setSaveStatus("Brochure upload failed. Upload a PDF smaller than 15 MB.");
@@ -689,7 +698,7 @@ export function AdminPage({
               </AdminField>
               <AdminField label="Brochure PDF">
                 <p className="admin-help">
-                  Upload the PDF used by the Download Brochure button on the property page.
+                  Upload the PDF, wait for confirmation, then click Save Changes to publish it.
                 </p>
                 <input
                   accept="application/pdf,.pdf"
@@ -700,14 +709,22 @@ export function AdminPage({
                   }}
                 />
                 {activeProperty.brochureUrl && (
-                  <div className="admin-document-row">
-                    <a href={activeProperty.brochureUrl} target="_blank" rel="noreferrer">
-                      View uploaded brochure
-                    </a>
-                    <button type="button" onClick={() => updateProperty({ brochureUrl: "" })}>
-                      Remove
-                    </button>
-                  </div>
+                  <>
+                    <input
+                      aria-label="Saved brochure URL"
+                      type="url"
+                      value={activeProperty.brochureUrl}
+                      onChange={(event) => updateProperty({ brochureUrl: event.target.value })}
+                    />
+                    <div className="admin-document-row">
+                      <a href={activeProperty.brochureUrl} target="_blank" rel="noreferrer">
+                        Test uploaded brochure
+                      </a>
+                      <button type="button" onClick={() => updateProperty({ brochureUrl: "" })}>
+                        Remove
+                      </button>
+                    </div>
+                  </>
                 )}
               </AdminField>
               <AdminField label="Project Essentials, one per line">

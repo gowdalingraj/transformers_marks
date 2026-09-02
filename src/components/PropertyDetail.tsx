@@ -18,51 +18,6 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
       ? property.floorPlanImages
       : [property.floorPlanImage].filter(Boolean);
 
-  function downloadBrochure() {
-    if (property.brochureUrl) {
-      const link = document.createElement("a");
-      link.href = property.brochureUrl;
-      link.download = `${property.slug}-brochure.pdf`;
-      link.target = "_blank";
-      link.click();
-      return;
-    }
-
-    const brochure = [
-      property.name,
-      "",
-      `Type: ${property.type}`,
-      `Location: ${property.location}`,
-      `Price: ${property.price}`,
-      "",
-      property.aboutTitle,
-      property.aboutText,
-      "",
-      "Project Highlights",
-      ...property.facts.map((fact) => `- ${fact}`),
-      "",
-      "Amenities",
-      ...property.amenities.map((amenity) => `- ${amenity}`),
-      "",
-      property.masterPlanTitle,
-      property.masterPlan,
-      "",
-      property.floorPlanTitle,
-      property.floorPlan,
-      "",
-      "Available Units",
-      ...property.units.map((unit) => `- ${unit.unit} | ${unit.text}`)
-    ].join("\n");
-    const file = new Blob([brochure], { type: "text/plain" });
-    const url = URL.createObjectURL(file);
-    const link = document.createElement("a");
-
-    link.href = url;
-    link.download = `${property.slug}-brochure.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
   useEffect(() => {
     if (!popupImage) return;
 
@@ -177,9 +132,20 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
             <p className="property-copy">
               {property.aboutText}
             </p>
-            <button className="property-outline-button" type="button" onClick={downloadBrochure}>
-              Download Brochure
-            </button>
+            {property.brochureUrl ? (
+              <a
+                className="property-outline-button"
+                href={property.brochureUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open Brochure PDF
+              </a>
+            ) : (
+              <button className="property-outline-button" type="button" disabled>
+                Brochure Not Uploaded
+              </button>
+            )}
           </div>
         </section>
 
