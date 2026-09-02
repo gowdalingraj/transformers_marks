@@ -318,6 +318,9 @@ button {
 
 .property-hero-cta,
 .property-outline-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid hsl(var(--primary));
   border-radius: 9999px;
   color: hsl(var(--primary));
@@ -325,6 +328,7 @@ button {
   padding: 0.8rem 1.4rem;
   font-size: 0.875rem;
   font-weight: 700;
+  text-decoration: none;
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
@@ -334,6 +338,16 @@ button {
 .property-outline-button:hover {
   background-color: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
+}
+
+.property-outline-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.property-outline-button:disabled:hover {
+  color: hsl(var(--primary));
+  background: transparent;
 }
 
 .property-gallery {
