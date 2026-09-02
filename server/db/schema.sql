@@ -11,14 +11,17 @@ CREATE TABLE IF NOT EXISTS properties (
   gallery JSONB NOT NULL DEFAULT '[]'::jsonb,
   about_title TEXT NOT NULL,
   about_text TEXT NOT NULL,
+  brochure_url TEXT NOT NULL DEFAULT '',
   facts JSONB NOT NULL DEFAULT '[]'::jsonb,
   amenities JSONB NOT NULL DEFAULT '[]'::jsonb,
+  amenity_images JSONB NOT NULL DEFAULT '[]'::jsonb,
   master_plan_title TEXT NOT NULL DEFAULT 'Master Plan',
   master_plan_image TEXT NOT NULL DEFAULT '',
   master_plan TEXT NOT NULL,
   terrace_plan TEXT NOT NULL DEFAULT '',
   floor_plan_title TEXT NOT NULL DEFAULT 'Floor Plans',
   floor_plan_image TEXT NOT NULL DEFAULT '',
+  floor_plan_images JSONB NOT NULL DEFAULT '[]'::jsonb,
   floor_plan TEXT NOT NULL DEFAULT '',
   units JSONB NOT NULL DEFAULT '[]'::jsonb,
   sort_order INTEGER NOT NULL DEFAULT 0,
@@ -31,4 +34,7 @@ ALTER TABLE properties ADD COLUMN IF NOT EXISTS master_plan_image TEXT NOT NULL 
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS terrace_plan TEXT NOT NULL DEFAULT '';
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS floor_plan_title TEXT NOT NULL DEFAULT 'Floor Plans';
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS floor_plan_image TEXT NOT NULL DEFAULT '';
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS floor_plan_images JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS floor_plan TEXT NOT NULL DEFAULT '';
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS brochure_url TEXT NOT NULL DEFAULT '';
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS amenity_images JSONB NOT NULL DEFAULT '[]'::jsonb;
