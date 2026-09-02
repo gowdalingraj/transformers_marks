@@ -33,13 +33,13 @@ export function Hero({
   return (
     <main
       id="about"
-      className="hero-main flex-1 flex flex-col items-center justify-center px-6 py-32 relative z-10"
+      className="hero-main flex-1 flex flex-col items-center justify-center px-6 relative z-10"
     >
-      <div className="hero-intro text-center mb-16">
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium mb-4">
+      <div className="hero-intro text-center">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-heading font-medium mb-3">
           Find Your Perfect <span className="text-primary italic">Home</span>
         </h1>
-        <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+        <p className="text-muted-foreground text-base max-w-xl mx-auto">
           Discover exceptional properties in Bangalore&apos;s most coveted neighborhoods
         </p>
       </div>

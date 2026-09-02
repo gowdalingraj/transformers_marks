@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Property } from "../types/property";
 import { BackButton } from "./BackButton";
 import { CheckIcon, MapPinIcon, RupeeIcon, SparkIcon } from "./icons";
@@ -11,6 +11,7 @@ type PropertyDetailProps = {
 
 export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailProps) {
   const [activeImage, setActiveImage] = useState(0);
+  const [popupImage, setPopupImage] = useState<{ src: string; alt: string } | null>(null);
   const images = property.gallery.length > 0 ? property.gallery : [property.image];
   const floorPlanImages =
     property.floorPlanImages.length > 0
@@ -18,6 +19,15 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
       : [property.floorPlanImage].filter(Boolean);
 
   function downloadBrochure() {
+    if (property.brochureUrl) {
+      const link = document.createElement("a");
+      link.href = property.brochureUrl;
+      link.download = `${property.slug}-brochure.pdf`;
+      link.target = "_blank";
+      link.click();
+      return;
+    }
+
     const brochure = [
       property.name,
       "",
@@ -52,6 +62,22 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
     link.click();
     URL.revokeObjectURL(url);
   }
+
+  useEffect(() => {
+    if (!popupImage) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPopupImage(null);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [popupImage]);
 
   function showPreviousImage() {
     setActiveImage((current) => (current === 0 ? images.length - 1 : current - 1));
@@ -145,8 +171,7 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
 
         <section className="property-section property-about-grid">
           <div>
-            <p className="property-kicker">About Project</p>
-            <h2 className="property-section-title">{property.aboutTitle}</h2>
+            <h2 className="property-section-title">About Project</h2>
           </div>
           <div>
             <p className="property-copy">
@@ -189,15 +214,19 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
             </p>
           </div>
           <div className="property-amenities">
-            {property.amenities.map((amenity) => (
+            {property.amenities.map((amenity, index) => (
               <article className="property-amenity" key={amenity}>
-                <span className="property-amenity-icon">
-                  {amenity.toLowerCase().includes("approved") ? (
-                    <CheckIcon className="h-5 w-5" />
-                  ) : (
-                    <SparkIcon className="h-5 w-5" />
-                  )}
-                </span>
+                {property.amenityImages[index] ? (
+                  <img src={property.amenityImages[index]} alt="" />
+                ) : (
+                  <span className="property-amenity-icon">
+                    {amenity.toLowerCase().includes("approved") ? (
+                      <CheckIcon className="h-5 w-5" />
+                    ) : (
+                      <SparkIcon className="h-5 w-5" />
+                    )}
+                  </span>
+                )}
                 <h3>{amenity}</h3>
               </article>
             ))}
@@ -209,7 +238,14 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
             <p className="property-kicker">Master Plan</p>
             <h2 className="property-section-title">{property.masterPlanTitle}</h2>
             <div className="property-plan-card">
-              <img src={property.masterPlanImage} alt={property.masterPlanTitle} />
+              <button
+                className="property-popup-trigger"
+                type="button"
+                onClick={() => setPopupImage({ src: property.masterPlanImage, alt: property.masterPlanTitle })}
+              >
+                <img src={property.masterPlanImage} alt={property.masterPlanTitle} />
+                <span>View larger</span>
+              </button>
               <p>{property.masterPlan}</p>
             </div>
           </div>
@@ -219,11 +255,15 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
             {floorPlanImages.length > 0 ? (
               <div className="property-floor-plan-images">
                 {floorPlanImages.map((image, index) => (
-                  <img
+                  <button
+                    className="property-popup-trigger"
                     key={`${image}-${index}`}
-                    src={image}
-                    alt={`${property.floorPlanTitle} ${index + 1}`}
-                  />
+                    type="button"
+                    onClick={() => setPopupImage({ src: image, alt: `${property.floorPlanTitle} ${index + 1}` })}
+                  >
+                    <img src={image} alt={`${property.floorPlanTitle} ${index + 1}`} />
+                    <span>View larger</span>
+                  </button>
                 ))}
               </div>
             ) : (
@@ -238,7 +278,14 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
           <div className="property-units">
             {property.units.map((unit) => (
               <article className="property-unit" key={unit.unit}>
-                <img src={unit.image} alt={unit.unit} />
+                <button
+                  className="property-popup-trigger"
+                  type="button"
+                  onClick={() => setPopupImage({ src: unit.image, alt: unit.unit })}
+                >
+                  <img src={unit.image} alt={unit.unit} />
+                  <span>View larger</span>
+                </button>
                 <div>
                   <h3>{unit.unit}</h3>
                   <p>{unit.text}</p>
@@ -248,6 +295,27 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
           </div>
         </section>
       </div>
+      {popupImage && (
+        <div
+          className="property-image-popup"
+          role="dialog"
+          aria-modal="true"
+          aria-label={popupImage.alt}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPopupImage(null);
+          }}
+        >
+          <button
+            className="property-image-popup-close"
+            type="button"
+            aria-label="Close image"
+            onClick={() => setPopupImage(null)}
+          >
+            &times;
+          </button>
+          <img src={popupImage.src} alt={popupImage.alt} />
+        </div>
+      )}
     </main>
   );
 }

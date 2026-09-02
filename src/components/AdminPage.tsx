@@ -33,6 +33,27 @@ const USE_LIVE_STORAGE = import.meta.env.VITE_USE_LIVE_STORAGE
   ? import.meta.env.VITE_USE_LIVE_STORAGE === "true"
   : import.meta.env.PROD;
 
+function cleanLines(lines: string[]) {
+  return lines.map((line) => line.trim()).filter(Boolean);
+}
+
+function cleanPropertyLines(property: Property): Property {
+  const floorPlanImages = cleanLines(property.floorPlanImages);
+  const amenities = property.amenities
+    .map((name, index) => ({ name: name.trim(), image: property.amenityImages[index]?.trim() ?? "" }))
+    .filter((amenity) => amenity.name);
+
+  return {
+    ...property,
+    gallery: cleanLines(property.gallery),
+    facts: cleanLines(property.facts),
+    amenities: amenities.map((amenity) => amenity.name),
+    amenityImages: amenities.map((amenity) => amenity.image),
+    floorPlanImages,
+    floorPlanImage: floorPlanImages[0] ?? ""
+  };
+}
+
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -65,6 +86,15 @@ function readFileAsDataUrl(file: File) {
       image.onerror = () => resolve(original);
       image.src = original;
     };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function readFileAsRawDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
@@ -129,6 +159,33 @@ export function AdminPage({
     }
   }
 
+  async function storeBrochure(file: File) {
+    if (!USE_LIVE_STORAGE) {
+      return readFileAsRawDataUrl(file);
+    }
+
+    setSaveStatus("Uploading brochure...");
+
+    try {
+      const safeName = file.name
+        .replace(/\.pdf$/i, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "") || "property-brochure";
+      const result = await upload(`property-documents/${Date.now()}-${safeName}.pdf`, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+        clientPayload: JSON.stringify({ password: ADMIN_PASSWORD })
+      });
+
+      setSaveStatus("Brochure uploaded.");
+      return result.url;
+    } catch {
+      setSaveStatus("Brochure upload failed. Upload a PDF smaller than 15 MB.");
+      return null;
+    }
+  }
+
   function uniqueSlug(value: string, currentSlug?: string) {
     const base = slugify(value) || "property";
     const used = new Set(
@@ -180,13 +237,50 @@ export function AdminPage({
     }
   }
 
-  function updateLines(key: "gallery" | "facts" | "amenities", value: string) {
+  function updateLines(key: "gallery" | "facts", value: string) {
     updateProperty({
-      [key]: value
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
+      // Preserve the text exactly while it is being edited. Trimming or removing
+      // blank entries here makes a controlled textarea reject spaces and Enter.
+      [key]: value.split("\n")
     } as Pick<Property, typeof key>);
+  }
+
+  function updateAmenity(index: number, patch: { name?: string; image?: string }) {
+    if (!activeProperty) return;
+
+    const amenities = [...activeProperty.amenities];
+    const amenityImages = [...activeProperty.amenityImages];
+    if (patch.name !== undefined) amenities[index] = patch.name;
+    if (patch.image !== undefined) amenityImages[index] = patch.image;
+    updateProperty({ amenities, amenityImages });
+  }
+
+  function addAmenity() {
+    if (!activeProperty) return;
+    updateProperty({
+      amenities: [...activeProperty.amenities, `Amenity ${activeProperty.amenities.length + 1}`],
+      amenityImages: [...activeProperty.amenityImages, ""]
+    });
+  }
+
+  function removeAmenity(index: number) {
+    if (!activeProperty) return;
+    updateProperty({
+      amenities: activeProperty.amenities.filter((_, itemIndex) => itemIndex !== index),
+      amenityImages: activeProperty.amenityImages.filter((_, itemIndex) => itemIndex !== index)
+    });
+  }
+
+  async function uploadAmenityImage(index: number, file: File | undefined) {
+    if (!file) return;
+    const images = await storeImages([file]);
+    if (images) updateAmenity(index, { image: images[0] });
+  }
+
+  async function uploadBrochure(file: File | undefined) {
+    if (!file) return;
+    const brochureUrl = await storeBrochure(file);
+    if (brochureUrl) updateProperty({ brochureUrl });
   }
 
   function updateUnit(index: number, patch: Partial<PropertyUnit>) {
@@ -263,7 +357,10 @@ export function AdminPage({
   }
 
   function updateFloorPlanImages(images: string[]) {
-    updateProperty({ floorPlanImages: images, floorPlanImage: images[0] ?? "" });
+    updateProperty({
+      floorPlanImages: images,
+      floorPlanImage: images.find((image) => image.trim()) ?? ""
+    });
   }
 
   async function uploadFloorPlanImages(fileList: FileList | null) {
@@ -307,8 +404,10 @@ export function AdminPage({
       ],
       aboutTitle: "2 & 3 BHK Premium Residences",
       aboutText: "Describe the project, location, design, amenities and connectivity here.",
+      brochureUrl: "",
       facts: ["RERA Approved", "Premium Units", "Open Space"],
       amenities: ["Swimming Pool", "Gym", "Party Hall"],
+      amenityImages: ["", "", ""],
       masterPlanTitle: "Master Plan",
       masterPlanImage:
         "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200&h=800&fit=crop",
@@ -409,7 +508,9 @@ export function AdminPage({
               type="button"
               onClick={async () => {
                 try {
-                  const result = await onSave(drafts);
+                  const cleanedDrafts = drafts.map(cleanPropertyLines);
+                  const result = await onSave(cleanedDrafts);
+                  setDrafts(cleanedDrafts);
                   setSaveStatus(
                     result === "synced"
                       ? "Saved to the live website. Other users can see the changes now."
@@ -561,47 +662,109 @@ export function AdminPage({
                   }}
                 />
                 <div className="admin-gallery-preview">
-                  {activeProperty.gallery.map((image, index) => (
-                    <ImagePreview
-                      key={`${image}-${index}`}
-                      src={image}
-                      alt={`${activeProperty.name} gallery preview ${index + 1}`}
-                      compact
-                      onRemove={() =>
-                        updateProperty({
-                          gallery: activeProperty.gallery.filter(
-                            (_, imageIndex) => imageIndex !== index
-                          )
-                        })
-                      }
-                    />
-                  ))}
+                  {activeProperty.gallery.map((image, index) =>
+                    image.trim() ? (
+                      <ImagePreview
+                        key={`${image}-${index}`}
+                        src={image}
+                        alt={`${activeProperty.name} gallery preview ${index + 1}`}
+                        compact
+                        onRemove={() =>
+                          updateProperty({
+                            gallery: activeProperty.gallery.filter(
+                              (_, imageIndex) => imageIndex !== index
+                            )
+                          })
+                        }
+                      />
+                    ) : null
+                  )}
                 </div>
               </AdminField>
-              <AdminField label="About Title">
-                <input
-                  value={activeProperty.aboutTitle}
-                  onChange={(event) => updateProperty({ aboutTitle: event.target.value })}
-                />
-              </AdminField>
-              <AdminField label="About Text">
+              <AdminField label="About Project">
                 <textarea
                   value={activeProperty.aboutText}
                   onChange={(event) => updateProperty({ aboutText: event.target.value })}
                 />
               </AdminField>
-              <AdminField label="Facts, one per line">
+              <AdminField label="Brochure PDF">
+                <p className="admin-help">
+                  Upload the PDF used by the Download Brochure button on the property page.
+                </p>
+                <input
+                  accept="application/pdf,.pdf"
+                  type="file"
+                  onChange={(event) => {
+                    void uploadBrochure(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+                {activeProperty.brochureUrl && (
+                  <div className="admin-document-row">
+                    <a href={activeProperty.brochureUrl} target="_blank" rel="noreferrer">
+                      View uploaded brochure
+                    </a>
+                    <button type="button" onClick={() => updateProperty({ brochureUrl: "" })}>
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </AdminField>
+              <AdminField label="Project Essentials, one per line">
                 <textarea
                   value={activeProperty.facts.join("\n")}
                   onChange={(event) => updateLines("facts", event.target.value)}
                 />
               </AdminField>
-              <AdminField label="Amenities, one per line">
-                <textarea
-                  value={activeProperty.amenities.join("\n")}
-                  onChange={(event) => updateLines("amenities", event.target.value)}
-                />
-              </AdminField>
+              <section className="admin-units" aria-labelledby="admin-amenities-title">
+                <div className="admin-units-header">
+                  <div>
+                    <h2 id="admin-amenities-title">Amenity tiles</h2>
+                    <p className="admin-help">Choose a title and image for every amenity tile.</p>
+                  </div>
+                  <button type="button" onClick={addAmenity}>Add Amenity Tile</button>
+                </div>
+                <div className="admin-unit-list">
+                  {activeProperty.amenities.map((amenity, index) => (
+                    <article className="admin-unit-card" key={index}>
+                      <div className="admin-unit-card-header">
+                        <strong>Amenity tile {index + 1}</strong>
+                        <button type="button" onClick={() => removeAmenity(index)}>Remove</button>
+                      </div>
+                      <AdminField label="Amenity title">
+                        <input
+                          value={amenity}
+                          onChange={(event) => updateAmenity(index, { name: event.target.value })}
+                        />
+                      </AdminField>
+                      <AdminField label="Amenity image">
+                        <input
+                          aria-label={`Amenity ${index + 1} image URL`}
+                          placeholder="https://example.com/amenity.jpg"
+                          value={activeProperty.amenityImages[index] ?? ""}
+                          onChange={(event) => updateAmenity(index, { image: event.target.value })}
+                        />
+                        <input
+                          aria-label={`Upload amenity ${index + 1} image`}
+                          accept="image/*"
+                          type="file"
+                          onChange={(event) => {
+                            void uploadAmenityImage(index, event.target.files?.[0]);
+                            event.target.value = "";
+                          }}
+                        />
+                        {activeProperty.amenityImages[index] && (
+                          <ImagePreview
+                            src={activeProperty.amenityImages[index]}
+                            alt={`${amenity || `Amenity ${index + 1}`} preview`}
+                            onRemove={() => updateAmenity(index, { image: "" })}
+                          />
+                        )}
+                      </AdminField>
+                    </article>
+                  ))}
+                </div>
+              </section>
               <AdminField label="Master Plan Title">
                 <input
                   value={activeProperty.masterPlanTitle}
@@ -647,12 +810,7 @@ export function AdminPage({
                 <textarea
                   value={activeProperty.floorPlanImages.join("\n")}
                   onChange={(event) =>
-                    updateFloorPlanImages(
-                      event.target.value
-                        .split("\n")
-                        .map((line) => line.trim())
-                        .filter(Boolean)
-                    )
+                    updateFloorPlanImages(event.target.value.split("\n"))
                   }
                 />
               </AdminField>
@@ -668,21 +826,23 @@ export function AdminPage({
                   }}
                 />
                 <div className="admin-gallery-preview">
-                  {activeProperty.floorPlanImages.map((image, index) => (
-                    <ImagePreview
-                      key={`${image}-${index}`}
-                      src={image}
-                      alt={`${activeProperty.name} floor plan preview ${index + 1}`}
-                      compact
-                      onRemove={() =>
-                        updateFloorPlanImages(
-                          activeProperty.floorPlanImages.filter(
-                            (_, imageIndex) => imageIndex !== index
+                  {activeProperty.floorPlanImages.map((image, index) =>
+                    image.trim() ? (
+                      <ImagePreview
+                        key={`${image}-${index}`}
+                        src={image}
+                        alt={`${activeProperty.name} floor plan preview ${index + 1}`}
+                        compact
+                        onRemove={() =>
+                          updateFloorPlanImages(
+                            activeProperty.floorPlanImages.filter(
+                              (_, imageIndex) => imageIndex !== index
+                            )
                           )
-                        )
-                      }
-                    />
-                  ))}
+                        }
+                      />
+                    ) : null
+                  )}
                 </div>
               </AdminField>
               <AdminField label="Floor Plan Text">
