@@ -48,6 +48,8 @@ const defaultAmenities = [
   "Skating Rink"
 ];
 
+const defaultAmenityImages = galleryImages.slice(0, defaultAmenities.length);
+
 const defaultUnits = [
   {
     unit: "406 - 3 BHK East Facing",
@@ -87,8 +89,10 @@ const baseProperties: Omit<
   | "gallery"
   | "aboutTitle"
   | "aboutText"
+  | "brochureUrl"
   | "facts"
   | "amenities"
+  | "amenityImages"
   | "masterPlanTitle"
   | "masterPlanImage"
   | "masterPlan"
@@ -226,8 +230,10 @@ export const properties: Property[] = baseProperties.map((property, index) => ({
   gallery: makeGallery(property.image, index),
   aboutTitle: "2 & 3 BHK Premium Residences",
   aboutText: `At ${property.name}, residents will find inspiration in architectural design, landscaped open spaces, planned amenities and thoughtful community areas. Located in ${property.location}, the project gives convenient access to growing residential, commercial, education and healthcare destinations.`,
+  brochureUrl: "",
   facts: defaultFacts,
   amenities: defaultAmenities,
+  amenityImages: defaultAmenityImages,
   masterPlanTitle: "Master Plan",
   masterPlanImage: planImages[index % planImages.length],
   masterPlan: "Arrival court, parking, access lobby and landscaped community zones.",
@@ -247,6 +253,8 @@ export function normalizeProperty(property: Property | Record<string, unknown>):
     floorPlanImage?: string;
     floorPlanImages?: string[];
     floorPlan?: string;
+    brochureUrl?: string;
+    amenityImages?: string[];
     units?: Array<{
       unit?: string;
       size?: string;
@@ -265,6 +273,10 @@ export function normalizeProperty(property: Property | Record<string, unknown>):
 
   return {
     ...(legacy as Property),
+    brochureUrl: legacy.brochureUrl || "",
+    amenityImages: Array.isArray(legacy.amenityImages)
+      ? legacy.amenityImages
+      : (legacy.amenities ?? []).map(() => ""),
     masterPlanTitle: legacy.masterPlanTitle || "Master Plan",
     masterPlanImage: legacy.masterPlanImage || planImages[0],
     floorPlanTitle: legacy.floorPlanTitle || "Floor Plans",
