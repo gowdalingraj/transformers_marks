@@ -21,6 +21,7 @@ export type Property = {
   aboutText: string;
   brochureUrl: string;
   facts: string[];
+  locationHighlights?: string[];
   amenities: string[];
   amenityImages: string[];
   masterPlanTitle: string;
