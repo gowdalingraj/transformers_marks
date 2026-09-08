@@ -4,6 +4,7 @@ let contentColumnsPromise;
 
 function ensureContentColumns() {
   contentColumnsPromise ??= Promise.all([
+    pool.query("ALTER TABLE properties ADD COLUMN IF NOT EXISTS location_highlights JSONB NOT NULL DEFAULT '[]'::jsonb"),
     pool.query(
       "ALTER TABLE properties ADD COLUMN IF NOT EXISTS floor_plan_images JSONB NOT NULL DEFAULT '[]'::jsonb"
     ),
@@ -33,6 +34,7 @@ export function rowToProperty(row) {
     aboutText: row.about_text,
     brochureUrl: row.brochure_url ?? "",
     facts: row.facts,
+    locationHighlights: row.location_highlights ?? [],
     amenities: row.amenities,
     amenityImages: row.amenity_images ?? row.amenities.map(() => ""),
     masterPlanTitle: row.master_plan_title ?? "Master Plan",
@@ -69,11 +71,11 @@ export async function replaceProperties(properties) {
           slug, name, type, location, location_id, price, budget, image,
           gallery, about_title, about_text, brochure_url, facts, amenities, amenity_images, master_plan_title,
           master_plan_image, master_plan, floor_plan_title, floor_plan_image,
-          floor_plan_images, floor_plan, units, sort_order
+          floor_plan_images, floor_plan, units, sort_order, location_highlights
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8,
           $9::jsonb, $10, $11, $12, $13::jsonb, $14::jsonb, $15::jsonb, $16,
-          $17, $18, $19, $20, $21::jsonb, $22, $23::jsonb, $24
+          $17, $18, $19, $20, $21::jsonb, $22, $23::jsonb, $24, $25::jsonb
         )`,
         [
           property.slug,
@@ -103,7 +105,8 @@ export async function replaceProperties(properties) {
           ),
           property.floorPlan ?? property.terracePlan ?? "",
           JSON.stringify(property.units),
-          index
+          index,
+          JSON.stringify(property.locationHighlights ?? [])
         ]
       );
     }
