@@ -47,7 +47,7 @@ function FilterChip({
 }) {
   return (
     <button
-      className={`flex items-center gap-1.5 px-4 py-2 border border-primary rounded-full text-sm text-primary hover:bg-primary/10 transition-colors ${className}`}
+      className={`active-filter flex items-center gap-1.5 px-4 py-2 border border-primary rounded-full text-sm text-primary hover:bg-primary/10 transition-colors ${className}`}
       type="button"
       onClick={onClick}
     >

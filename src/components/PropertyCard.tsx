@@ -17,7 +17,7 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
           onClick();
         }}
       >
-        <div className="relative h-48 overflow-hidden">
+        <div className="property-card-photo relative overflow-hidden">
           <img
             src={property.image}
             alt={property.name}
@@ -40,6 +40,7 @@ export function PropertyCard({ property, onClick }: PropertyCardProps) {
             <RupeeIcon className="w-3.5 h-3.5" />
             <span>{property.price}</span>
           </div>
+          <span className="card-details">View details &rarr;</span>
         </div>
       </a>
     </article>

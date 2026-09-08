@@ -32,15 +32,15 @@ export function Hero({
 }: HeroProps) {
   return (
     <main
-      id="about"
+      id="home"
       className="hero-main flex-1 flex flex-col items-center justify-center px-6 relative z-10"
     >
       <div className="hero-intro text-center">
         <h1 className="text-3xl md:text-4xl lg:text-5xl font-heading font-medium mb-3">
-          Find Your Perfect <span className="text-primary italic">Home</span>
+          Our Purpose. Your <span className="text-primary italic">Address.</span>
         </h1>
         <p className="text-muted-foreground text-base max-w-xl mx-auto">
-          Discover exceptional properties in Bangalore&apos;s most coveted neighborhoods
+          Simplify your property search
         </p>
       </div>
 

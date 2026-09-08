@@ -47,6 +47,7 @@ function cleanPropertyLines(property: Property): Property {
     ...property,
     gallery: cleanLines(property.gallery),
     facts: cleanLines(property.facts),
+    locationHighlights: cleanLines(property.locationHighlights ?? []),
     amenities: amenities.map((amenity) => amenity.name),
     amenityImages: amenities.map((amenity) => amenity.image),
     floorPlanImages,
@@ -591,6 +592,7 @@ export function AdminPage({
                     onChange={(event) => updateProperty({ location: event.target.value })}
                   />
                 </AdminField>
+                <AdminField label="Location highlights (one per line)"><textarea value={(activeProperty.locationHighlights ?? []).join("\n")} onChange={(event) => updateProperty({ locationHighlights: event.target.value.split("\n") })} /></AdminField>
                 <AdminField label="Location Filter">
                   <select
                     value={activeProperty.locationId}
@@ -727,8 +729,10 @@ export function AdminPage({
                   </>
                 )}
               </AdminField>
-              <AdminField label="Project Essentials, one per line">
+              <AdminField label="Highlights (one point per line)">
                 <textarea
+                  rows={6}
+                  placeholder={"Apartments, Ready to Move In\nBuilt in 2023\n2765 Sq Ft\n4 Bedrooms\n4 Bathrooms\nGarage"}
                   value={activeProperty.facts.join("\n")}
                   onChange={(event) => updateLines("facts", event.target.value)}
                 />

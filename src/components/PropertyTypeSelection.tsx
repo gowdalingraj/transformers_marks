@@ -13,7 +13,7 @@ export function PropertyTypeSelection({ selectedType, onSelect }: PropertyTypeSe
         What are you looking for?
       </h2>
       <p className="text-muted-foreground mb-10">Select your preferred property type</p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+      <div className="type-tiles">
         {propertyTypes.map(({ title, value, description, icon: Icon }) => (
           <button
             className={`selection-card ${selectedType === value ? "active" : ""}`}

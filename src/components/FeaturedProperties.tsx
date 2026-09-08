@@ -28,7 +28,7 @@ export function FeaturedProperties({
           {properties.length} {properties.length === 1 ? "property" : "properties"} found
         </p>
         {properties.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="property-scroll" role="region" aria-label="Properties — scroll horizontally to browse" tabIndex={0}>
             {properties.map((property) => (
               <PropertyCard
                 key={property.name}

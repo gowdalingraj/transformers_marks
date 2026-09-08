@@ -15,7 +15,7 @@ export function Header() {
 
         <ul className="hidden sm:flex items-center gap-6 md:gap-8">
           <li>
-            <a href="/#about" className="nav-link text-sm">
+            <a href="/about" className="nav-link text-sm">
               About
             </a>
           </li>
@@ -25,7 +25,7 @@ export function Header() {
             </a>
           </li>
           <li>
-            <a href="/#contact" className="nav-link text-sm">
+            <a href="/contact" className="nav-link text-sm">
               Contact
             </a>
           </li>
@@ -52,13 +52,13 @@ export function Header() {
 
       {isMenuOpen && (
         <div className="mobile-menu-panel open sm:hidden" id="mobile-menu">
-          <a href="/#about" onClick={closeMenu}>
+          <a href="/about" onClick={closeMenu}>
             About
           </a>
           <a href="/#properties" onClick={closeMenu}>
             Properties
           </a>
-          <a href="/#contact" onClick={closeMenu}>
+          <a href="/contact" onClick={closeMenu}>
             Contact
           </a>
           <a href="/admin" onClick={closeMenu}>

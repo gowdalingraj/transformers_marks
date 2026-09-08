@@ -1,7 +1,8 @@
+import { AmenityIcon } from "./AmenityIcon";
 import { useEffect, useState } from "react";
 import type { Property } from "../types/property";
 import { BackButton } from "./BackButton";
-import { CheckIcon, MapPinIcon, RupeeIcon, SparkIcon } from "./icons";
+import { MapPinIcon, RupeeIcon } from "./icons";
 
 type PropertyDetailProps = {
   property: Property;
@@ -64,9 +65,12 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
               </span>
             </div>
           </div>
+          <div className="property-actions">
+          {property.brochureUrl ? <a className="property-outline-button" href={property.brochureUrl} download target="_blank" rel="noreferrer">Download Brochure</a> : <button className="property-outline-button" disabled>Brochure unavailable</button>}
           <button className="property-hero-cta" type="button" onClick={onEnquire}>
-            Enquire Now
+            Cost Sheet
           </button>
+          </div>
         </section>
 
         <section className="property-gallery">
@@ -132,21 +136,15 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
             <p className="property-copy">
               {property.aboutText}
             </p>
-            {property.brochureUrl ? (
-              <a
-                className="property-outline-button"
-                href={property.brochureUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open Brochure PDF
-              </a>
-            ) : (
-              <button className="property-outline-button" type="button" disabled>
-                Brochure Not Uploaded
-              </button>
-            )}
+
           </div>
+        </section>
+
+        <section className="property-section">
+          <p className="property-kicker">Location</p>
+          <h2 className="property-section-title">{property.location}</h2>
+          <a className="location-map-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.name}, ${property.location}, Bangalore`)}`} target="_blank" rel="noreferrer"><MapPinIcon className="h-5 w-5" /><span>Explore the location on Google Maps</span><span aria-hidden="true">&nearr;</span></a>
+          {property.locationHighlights?.length ? <><h3>Location Highlights</h3><ul className="location-highlights">{property.locationHighlights.map((highlight) => <li key={highlight}>{highlight}</li>)}</ul></> : null}
         </section>
 
         <section className="property-section property-highlights-section">
@@ -159,14 +157,14 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
               Key approvals, planning details and community-scale markers at a glance.
             </p>
           </div>
-          <div className="property-facts">
-            {property.facts.map((fact, index) => (
-              <article className="property-fact" key={fact}>
-                <span className="property-fact-number">{String(index + 1).padStart(2, "0")}</span>
-                <h3>{fact}</h3>
-              </article>
+          <ul className="property-highlights-box">
+            {property.facts.filter((fact) => fact.trim()).map((fact, index) => (
+              <li key={`${index}-${fact}`}>
+                <span className="highlight-bullet" aria-hidden="true">•</span>
+                <span>{fact}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
 
         <section className="property-section">
@@ -186,14 +184,10 @@ export function PropertyDetail({ property, onBack, onEnquire }: PropertyDetailPr
                   <img src={property.amenityImages[index]} alt="" />
                 ) : (
                   <span className="property-amenity-icon">
-                    {amenity.toLowerCase().includes("approved") ? (
-                      <CheckIcon className="h-5 w-5" />
-                    ) : (
-                      <SparkIcon className="h-5 w-5" />
-                    )}
+                    <AmenityIcon name={amenity} />
                   </span>
                 )}
-                <h3>{amenity}</h3>
+                <h3>{property.amenityImages[index] && <AmenityIcon name={amenity} />}{amenity}</h3>
               </article>
             ))}
           </div>
