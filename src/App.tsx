@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { locations } from "./data/locations";
+import { InfoPage } from "./components/InfoPage";
 import { AdminPage } from "./components/AdminPage";
 import { FeaturedProperties } from "./components/FeaturedProperties";
 import { Footer } from "./components/Footer";
@@ -35,6 +37,7 @@ export default function App() {
   const [isAdminAuthed, setIsAdminAuthed] = useState(
     () => window.sessionStorage.getItem(ADMIN_SESSION_KEY) === "true"
   );
+  const [search, setSearch] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedType, setSelectedType] = useState<PropertyType | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<LocationId | null>(null);
@@ -198,6 +201,7 @@ export default function App() {
 
   const visibleProperties = useMemo(() => {
     return propertyList.filter((property) => {
+      if (search.trim() && !`${property.name} ${property.location}`.toLowerCase().includes(search.trim().toLowerCase())) return false;
       if (selectedType && property.type !== selectedType) {
         return false;
       }
@@ -212,7 +216,7 @@ export default function App() {
 
       return true;
     });
-  }, [propertyList, selectedBudget, selectedLocation, selectedType]);
+  }, [propertyList, selectedBudget, selectedLocation, selectedType, search]);
 
   async function saveProperties(nextProperties: Property[]) {
     setPropertyList(nextProperties);
@@ -316,7 +320,7 @@ export default function App() {
 
   function handleSelectBudget(budget: BudgetId) {
     setSelectedBudget(budget);
-    window.setTimeout(() => navigate("/lead"), 400);
+    window.requestAnimationFrame(() => document.getElementById("properties")?.scrollIntoView({ behavior: "smooth" }));
   }
 
   function clearType() {
@@ -342,16 +346,18 @@ export default function App() {
       <div
         className="fixed inset-0 z-0"
         style={{
-          backgroundImage: "url('/assets/hero-bg-DNGYIAIc.jpg')",
+          backgroundImage: "url('/assets/home-daylight.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center center",
-          opacity: 0.45
+          opacity: 0.25
         }}
       />
       <div className="fixed inset-0 z-0 bg-gradient-to-b from-background/70 via-background/50 to-background" />
 
       <Header />
-      {isAdminRoute ? (
+      {routeUrl.pathname === "/about" || routeUrl.pathname === "/contact" ? (
+        <InfoPage page={routeUrl.pathname === "/about" ? "about" : "contact"} />
+      ) : isAdminRoute ? (
         <AdminPage
           isAuthed={isAdminAuthed}
           properties={propertyList}
@@ -395,6 +401,10 @@ export default function App() {
             onClearLocation={clearLocation}
             onClearBudget={clearBudget}
           />
+          <div className="home-search relative z-10">
+            <label>Search by property or location<input type="search" placeholder="Project name or neighbourhood" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+            <label>Location<select value={selectedLocation ?? ""} onChange={(event) => { setSelectedLocation((event.target.value || null) as LocationId | null); setSelectedBudget(null); }}><option value="">All locations</option>{locations.map((location) => <option key={location.id} value={location.id}>{location.title}</option>)}</select></label>
+          </div>
           <FeaturedProperties
             properties={visibleProperties}
             selectedType={selectedType}
