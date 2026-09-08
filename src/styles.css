@@ -1270,6 +1270,7 @@ button {
   outline-offset: 4px;
 }
 
+.hero-main .type-tiles .selection-card:is(:hover, :focus-visible, .active),
 .hero-main .selection-card:hover,
 .hero-main .selection-card:focus-visible,
 .hero-main .selection-card.active {
